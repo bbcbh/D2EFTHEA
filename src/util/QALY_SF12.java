@@ -51,18 +51,18 @@ public class QALY_SF12 {
 			int val = sf12[i];
 
 			switch (i) {
-			
+
 			case SF12_GH1:
 				switch (val) {
-				case 1: // Excellence					
+				case 1: // Excellence
 					break;
 				case 2: // V. good
 					summaryScale[PCS_12] += -1.31872f;
-					summaryScale[MCS_12] += -0.06064f;					
+					summaryScale[MCS_12] += -0.06064f;
 					break;
 				case 3: // Good
 					summaryScale[PCS_12] += -3.02396f;
-					summaryScale[MCS_12] +=  0.03482f;
+					summaryScale[MCS_12] += 0.03482f;
 					break;
 				case 4: // Fair
 					summaryScale[PCS_12] += -5.56461f;
@@ -73,56 +73,188 @@ public class QALY_SF12 {
 					summaryScale[MCS_12] += -1.71175f;
 					break;
 				default:
-					System.err.println("Error in SF-12 index #" + i + ": " + Arrays.toString(sf12));
+					throw new IllegalArgumentException();
 				}
 				break;
 			case SF12_PF02:
 				switch (val) {
-				case 1: // Limit a lot	
+				case 1: // Limit a lot
 					summaryScale[PCS_12] += -7.23216f;
-					summaryScale[MCS_12] +=  3.93115f;
+					summaryScale[MCS_12] += 3.93115f;
 					break;
 				case 2: // Limit little
 					summaryScale[PCS_12] += -3.45555f;
-					summaryScale[MCS_12] +=  1.86840f;	
+					summaryScale[MCS_12] += 1.86840f;
 					break;
-				case 3: // No limit				
+				case 3: // No limit
 					break;
 				default:
-					System.err.println("Error in SF-12 index #" + i + ": " + Arrays.toString(sf12));				
-				}				
-				break;				
+					throw new IllegalArgumentException();
+				}
+				break;
 			case SF12_PF04:
 				switch (val) {
-				case 1: // Limit a lot	
+				case 1: // Limit a lot
 					summaryScale[PCS_12] += -6.24397f;
-					summaryScale[MCS_12] +=  2.68282f;
+					summaryScale[MCS_12] += 2.68282f;
 					break;
 				case 2: // Limit little
 					summaryScale[PCS_12] += -2.73557f;
-					summaryScale[MCS_12] +=  1.43103f;
+					summaryScale[MCS_12] += 1.43103f;
 					break;
-				case 3: // No limit				
+				case 3: // No limit
 					break;
 				default:
-					System.err.println("Error in SF-12 index #" + i + ": " + Arrays.toString(sf12));				
-				}										
-				break;	
-				
+					throw new IllegalArgumentException();
+				}
+				break;
+
 			case SF12_RP2:
-				if(val!= 5) { // Yes
+				if (val != 5) { // Yes
 					summaryScale[PCS_12] += -4.61617f;
-					summaryScale[MCS_12] +=  1.44060f;
-				}			
+					summaryScale[MCS_12] += 1.44060f;
+				}
 				break;
 			case SF12_RP3:
-				if(val!= 5) { // Yes
+				if (val != 5) { // Yes
 					summaryScale[PCS_12] += -5.51747f;
-					summaryScale[MCS_12] +=  1.66968f;
-				}				
+					summaryScale[MCS_12] += 1.66968f;
+				}
+				break;
+			case SF12_RE2:
+				if (val != 5) { // Yes
+					summaryScale[PCS_12] += 3.04365f;
+					summaryScale[MCS_12] += -6.82672f;
+				}
+				break;
+			case SF12_RE3:
+				if (val != 5) { // Yes
+					summaryScale[PCS_12] += 2.32091f;
+					summaryScale[MCS_12] += -5.69921f;
+				}
+				break;
+			case SF12_BP2:
+				switch (val) {
+				case 1: // Not at all
+					break;
+				case 2: // A little bit
+					summaryScale[PCS_12] += -3.80130f;
+					summaryScale[MCS_12] += 0.90384f;
+					break;
+				case 3: // Moderately
+					summaryScale[PCS_12] += -6.50522f;
+					summaryScale[MCS_12] += 1.49384f;
+					break;
+				case 4: // Quite a bit
+					summaryScale[PCS_12] += -8.38063f;
+					summaryScale[MCS_12] += 1.76691f;
+					break;
+				case 5: // Extremely
+					summaryScale[PCS_12] += -11.25544f;
+					summaryScale[MCS_12] += 1.48619f;
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
+				break;
+			case SF12_MH3:
+				switch (val) {
+				case 1: // All the time
+					break;
+				case 2: // Most of the time
+					summaryScale[PCS_12] += 0.66514f;
+					summaryScale[MCS_12] += -1.94949f;
+					break;
+				case 3: // Some of the time
+					summaryScale[PCS_12] += 2.37241f;
+					summaryScale[MCS_12] += -6.31121f;
+					break;
+				case 4: // A little of the time
+					summaryScale[PCS_12] += 2.90426f;
+					summaryScale[MCS_12] += -7.92717f;
+					break;
+				case 5: // None of the time
+					summaryScale[PCS_12] += 3.46638f;
+					summaryScale[MCS_12] += -10.19085f;
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
+				break;
+			case SF12_VT2:
+				switch (val) {
+				case 1: // All the time
+					break;
+				case 2: // Most of the time
+					summaryScale[PCS_12] += -0.42251f;
+					summaryScale[MCS_12] += -0.92057f;
+					break;
+				case 3: // Some of the time
+					summaryScale[PCS_12] += -1.61850f;
+					summaryScale[MCS_12] += -3.29805f;
+					break;
+				case 4: // A little of the time
+					summaryScale[PCS_12] += -2.02168f;
+					summaryScale[MCS_12] += -4.88962f;
+					break;
+				case 5: // None of the time
+					summaryScale[PCS_12] += -2.44706f;
+					summaryScale[MCS_12] += -6.02409f;
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
+				break;
+			case SF12_MH4:
+				switch (val) {
+				case 1: // All the time
+					summaryScale[PCS_12] += 4.61446f;
+					summaryScale[MCS_12] += -16.15395f;
+					break;
+				case 2: // Most of the time
+					summaryScale[PCS_12] += 3.41593f;
+					summaryScale[MCS_12] += -10.77911f;
+					break;
+				case 3: // Some of the time
+					summaryScale[PCS_12] += 1.28044f;
+					summaryScale[MCS_12] += -4.59055f;
+					break;
+				case 4: // A little of the time
+					summaryScale[PCS_12] += 0.41188f;
+					summaryScale[MCS_12] += -1.95934f;
+					break;
+				case 5: // None of the time
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
+				break;
+			case SF12_SF2:
+				switch (val) {
+				case 1: // All the time
+					summaryScale[PCS_12] += -0.33682f;
+					summaryScale[MCS_12] += -6.29724f;
+					break;
+				case 2: // Most of the time
+					summaryScale[PCS_12] += -0.94342f;
+					summaryScale[MCS_12] += -8.26066f;
+					break;
+				case 3: // Some of the time
+					summaryScale[PCS_12] += -0.18043f;
+					summaryScale[MCS_12] += -5.63286f;
+					break;
+				case 4: // A little of the time
+					summaryScale[PCS_12] +=  0.11038f;
+					summaryScale[MCS_12] += -3.13896f;
+					break;
+				case 5: // None of the time
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
 				break;
 			default:
-				System.err.println("Error in SF-12 index #" + i + ": " + Arrays.toString(sf12));
+				throw new IllegalArgumentException();
 			}
 
 		}
