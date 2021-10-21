@@ -7,7 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
-import util.QALY_D2EFT_SF12;
+import util.D2EFT_QALY_SF12;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.awt.event.ActionEvent;
 
-public class SF12_Form extends JFrame {
+public class D2EFT_SF12_Form extends JFrame {
 
 	/**
 	 * 
@@ -38,7 +38,7 @@ public class SF12_Form extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					SF12_Form frame = new SF12_Form();
+					D2EFT_SF12_Form frame = new D2EFT_SF12_Form();
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -50,10 +50,10 @@ public class SF12_Form extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public SF12_Form() {
+	public D2EFT_SF12_Form() {
 
 		Hashtable<Integer, JLabel> ent;
-		JSlider[] slider_collection = new JSlider[QALY_D2EFT_SF12.SF112_LENGTH];
+		JSlider[] slider_collection = new JSlider[D2EFT_QALY_SF12.SF112_LENGTH];
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 900, 950);
@@ -83,18 +83,18 @@ public class SF12_Form extends JFrame {
 		for (int i = 0; i < slider_collection.length; i++) {
 			slider_collection[i] = new JSlider();
 			slider_collection[i].setMinimum(1);
-			slider_collection[i].setMaximum(QALY_D2EFT_SF12.SF12_Options[i].length);
-			slider_collection[i].setValue(QALY_D2EFT_SF12.SF12_Options_Default[i]);
+			slider_collection[i].setMaximum(D2EFT_QALY_SF12.SF12_Options[i].length);
+			slider_collection[i].setValue(D2EFT_QALY_SF12.SF12_Options_Default[i]);
 			slider_collection[i].setMajorTickSpacing(1);
 			slider_collection[i].setSnapToTicks(true);
 			slider_collection[i].setPaintLabels(true);
 			slider_collection[i].setPaintTicks(true);
 			ent = new Hashtable<Integer, JLabel>();
-			for (int j = 0; j < QALY_D2EFT_SF12.SF12_Options[i].length; j++) {
-				ent.put(j + 1, new JLabel(QALY_D2EFT_SF12.SF12_Options[i][j]));
+			for (int j = 0; j < D2EFT_QALY_SF12.SF12_Options[i].length; j++) {
+				ent.put(j + 1, new JLabel(D2EFT_QALY_SF12.SF12_Options[i][j]));
 			}
 			slider_collection[i].setLabelTable(ent);
-			slider_collection[i].setBorder(BorderFactory.createTitledBorder(QALY_D2EFT_SF12.SF12_QUESTIONS_TEXT[i]));
+			slider_collection[i].setBorder(BorderFactory.createTitledBorder(D2EFT_QALY_SF12.SF12_QUESTIONS_TEXT[i]));
 			questionPanel.add(slider_collection[i]);
 			questionPanel.add(Box.createVerticalStrut(5));
 		}
@@ -110,7 +110,7 @@ public class SF12_Form extends JFrame {
 					ans[i] = slider_collection[i].getValue();
 				}				
 				try {
-					float[] scale = QALY_D2EFT_SF12.calulateSummaryScale(ans);
+					float[] scale = D2EFT_QALY_SF12.calulateSummaryScale(ans);
 					String output = String.format("PCS-12 (Physical Score) = %.5f, MCS-12 (Mental Score) = %.5f", scale[0], scale[1]);					
 					lblOutput.setText(output);
 					

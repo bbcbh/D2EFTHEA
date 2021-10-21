@@ -1,8 +1,6 @@
 package util;
 
-import javax.swing.JLabel;
-
-public class QALY_D2EFT_SF12 {
+public class D2EFT_QALY_SF12 {
 
 	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020
 
