@@ -1,8 +1,8 @@
 package util;
 
-import java.util.Arrays;
+import javax.swing.JLabel;
 
-public class QALY_SF12 {
+public class QALY_D2EFT_SF12 {
 
 	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020
 
@@ -31,8 +31,41 @@ public class QALY_SF12 {
 	// Q7: Interference of physical health or emotional problems with social
 	// activities
 	public static final int SF12_SF2 = SF12_MH4 + 1;
-
 	public static final int SF112_LENGTH = SF12_SF2 + 1; // 12
+
+	public static final String[] SF12_QUESTIONS_TEXT = new String[] { "Would say your health is ... ",
+			"Your health limited moderate activities", "Your health limited climbing stairs",
+			"Accomplished less than you would like due to physical health",
+			"Were limited in the kind of work or other activities due to physical health",
+			"Accomplished less than you would like due to emotional problems",
+			"Didn't do work or other activities as carefully as usual",
+			"Pain interfere with normal work", "Feel calm and peaceful", "Had a lot of energy",
+			"Felt downhearted and depressed",
+			"Physical health or emotional problems interfere with social activities", };
+
+	public static final String[][] SF12_Options = new String[][] {
+			new String[] { "1: Excellent", "2: Very Good", "3: Good", "4: Fair", "5: Poor" },
+			new String[] { "1: Limited a lot", "2: Limited a little", "3: Not limited at all" },
+			new String[] { "1: Limited a lot", "2: Limited a little", "3: Not limited at all" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: Not at all", "2: A little bit", "3: Moderately", "4: Quite a bit", "5: Extremely" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" },
+			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
+					"4: A little of the time", "5: None of the time" }, };
+
+	public static final int[] SF12_Options_Default = new int[] { 1, 3, 3, 5, 5, 5, 5, 1, 1, 1, 5, 5 };
 
 	public static final int PCS_12 = 0;
 	public static final int MCS_12 = PCS_12 + 1;
@@ -244,7 +277,7 @@ public class QALY_SF12 {
 					summaryScale[MCS_12] += -5.63286f;
 					break;
 				case 4: // A little of the time
-					summaryScale[PCS_12] +=  0.11038f;
+					summaryScale[PCS_12] += 0.11038f;
 					summaryScale[MCS_12] += -3.13896f;
 					break;
 				case 5: // None of the time
