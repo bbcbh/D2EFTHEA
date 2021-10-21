@@ -1,7 +1,6 @@
 package gui;
 
 import java.awt.EventQueue;
-import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.JFrame;
@@ -26,6 +25,10 @@ import java.awt.event.ActionEvent;
 
 public class SF12_Form extends JFrame {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8661014398408726330L;
 	private JPanel contentPane;
 
 	/**
@@ -111,9 +114,10 @@ public class SF12_Form extends JFrame {
 					String output = String.format("PCS-12 (Physical Score) = %.5f, MCS-12 (Mental Score) = %.5f", scale[0], scale[1]);					
 					lblOutput.setText(output);
 					
-				} catch (IllegalArgumentException ex) {					
-					PrintWriter str = new PrintWriter(new StringWriter());										
-					JOptionPane.showMessageDialog(btnCalculate.getRootPane(), "", ex.toString(), JOptionPane.ERROR_MESSAGE);
+				} catch (IllegalArgumentException ex) {						
+					PrintWriter str = new PrintWriter(new StringWriter());		
+					ex.printStackTrace(str);
+					JOptionPane.showMessageDialog(btnCalculate.getRootPane(), str.toString(), ex.toString(), JOptionPane.ERROR_MESSAGE);
 
 				}
 
