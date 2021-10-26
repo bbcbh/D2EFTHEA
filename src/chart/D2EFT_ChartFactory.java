@@ -9,7 +9,9 @@ import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
 
-public class D2EFT_ChartFactory {		
+public class D2EFT_ChartFactory {
+	
+	
 	
 	
 	
@@ -48,6 +50,10 @@ public class D2EFT_ChartFactory {
 		int[] test_data = new int[] { 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 5 };
 		final JFreeChart c = D2EFT_ChartFactory.generateSingleFreqencyBarChart(test_data, "Test", "Test data", "Freq");
 
+		showJFreeChart(c);
+	}
+
+	public static void showJFreeChart(final JFreeChart c) {
 		java.awt.EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {

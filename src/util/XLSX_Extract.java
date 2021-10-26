@@ -44,7 +44,8 @@ public class XLSX_Extract {
 	    try {
 	        OPCPackage pkg = OPCPackage.open(inpath);
 	        srcWorkbook = new XSSFWorkbook(pkg);
-	        printOutput("success!\n");
+	        printOutput("success!\n");	        
+	        pkg.close();
 	    } catch (InvalidFormatException | IOException ex) {
 	        printOutput("FAILED!\n");
 	        StringWriter err = new StringWriter();
@@ -61,6 +62,8 @@ public class XLSX_Extract {
 	        }
 	
 	    }
+	    
+	    
 	}
 
 	protected void printOutput(String line) {

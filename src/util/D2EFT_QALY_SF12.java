@@ -69,8 +69,12 @@ public class D2EFT_QALY_SF12 {
 	public static final int MCS_12 = PCS_12 + 1;
 	public static final int SUMMARY_SCALE_LENGTH = MCS_12 + 1;
 
-	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020, page 25
+	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020, page 25	
 	public static float[] calulateSummaryScale(int[] sf12) {
+		return calulateSummaryScale(sf12,0);
+	}		
+	
+	public static float[] calulateSummaryScale(int[] sf12, int offset) {
 
 		float[] summaryScale = new float[SUMMARY_SCALE_LENGTH];
 
@@ -79,7 +83,7 @@ public class D2EFT_QALY_SF12 {
 		summaryScale[MCS_12] = 60.75781f;
 
 		for (int i = 0; i < sf12.length; i++) {
-			int val = sf12[i];
+			int val = sf12[i] + offset;
 
 			switch (i) {
 
