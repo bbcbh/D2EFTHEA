@@ -2,7 +2,6 @@ package chart;
 
 import java.util.Arrays;
 
-import org.apache.poi.ss.usermodel.Color;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
@@ -10,7 +9,10 @@ import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
 
-public class D2EFT_ChartFactory {
+public class D2EFT_ChartFactory {		
+	
+	
+	
 
 	public static JFreeChart generateSingleFreqencyBarChart(int[] data, String title, String xlabel, String ylabel) {
 
@@ -30,10 +32,16 @@ public class D2EFT_ChartFactory {
 
 		chart = ChartFactory.createBarChart(title, xlabel, ylabel, dataset);	
 		chart.removeLegend();
+		java.awt.Color barColor = new java.awt.Color(0,0,255,25);
+		
+		
 		((BarRenderer)  chart.getCategoryPlot().getRenderer()).setBarPainter(new StandardBarPainter());
-		((BarRenderer)  chart.getCategoryPlot().getRenderer()).setSeriesPaint(0,java.awt.Color.blue);	
-
+		((BarRenderer)  chart.getCategoryPlot().getRenderer()).setSeriesPaint(0,barColor);
+		chart.getCategoryPlot().getDomainAxis(0).setCategoryMargin(0);
+		
 		return chart;
+
+		
 	}
 
 	public static void main(String[] arg) {

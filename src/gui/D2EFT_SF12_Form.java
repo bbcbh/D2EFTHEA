@@ -53,7 +53,7 @@ public class D2EFT_SF12_Form extends JFrame {
 	public D2EFT_SF12_Form() {
 
 		Hashtable<Integer, JLabel> ent;
-		JSlider[] slider_collection = new JSlider[D2EFT_QALY_SF12.SF112_LENGTH];
+		JSlider[] slider_collection = new JSlider[D2EFT_QALY_SF12.SF12_LENGTH];
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 900, 950);

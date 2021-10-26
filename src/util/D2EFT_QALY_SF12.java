@@ -29,7 +29,7 @@ public class D2EFT_QALY_SF12 {
 	// Q7: Interference of physical health or emotional problems with social
 	// activities
 	public static final int SF12_SF2 = SF12_MH4 + 1;
-	public static final int SF112_LENGTH = SF12_SF2 + 1; // 12
+	public static final int SF12_LENGTH = SF12_SF2 + 1; // 12
 
 	public static final String[] SF12_QUESTIONS_TEXT = new String[] { "Would say your health is ... ",
 			"Your health limited moderate activities", "Your health limited climbing stairs",
@@ -42,26 +42,26 @@ public class D2EFT_QALY_SF12 {
 			"Physical health or emotional problems interfere with social activities", };
 
 	public static final String[][] SF12_Options = new String[][] {
-			new String[] { "1: Excellent", "2: Very Good", "3: Good", "4: Fair", "5: Poor" },
-			new String[] { "1: Limited a lot", "2: Limited a little", "3: Not limited at all" },
-			new String[] { "1: Limited a lot", "2: Limited a little", "3: Not limited at all" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: Not at all", "2: A little bit", "3: Moderately", "4: Quite a bit", "5: Extremely" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" },
-			new String[] { "1: All of the time", "2: Most of the time", "3: Some of the time",
-					"4: A little of the time", "5: None of the time" }, };
+			new String[] { "Excellent", "Very good", "Good", "Fair", "Poor" },
+			new String[] { "Yes, limited a lot", "Yes, limited a little", "No, not limited at all" },
+			new String[] { "Yes, limited a lot", "Yes, limited a little", "No, not limited at all" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "Not at all", "A little bit", "Moderately", "Quite a bit", "Extremely" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" },
+			new String[] { "All of the time", "Most of the time", "Some of the time",
+					"A little of the time", "None of the time" }, };
 
 	public static final int[] SF12_Options_Default = new int[] { 1, 3, 3, 5, 5, 5, 5, 1, 1, 1, 5, 5 };
 

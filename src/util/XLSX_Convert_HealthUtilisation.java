@@ -8,36 +8,32 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  * Convert XLSX (from Yuvi) to a format for my own database
  *
  * @author Ben Hui
  */
-public class XLSX_Convert {
-
-    File inpath;
-    File outpath;
-
-    XSSFSheet[] sheets;
-    XSSFWorkbook srcWorkbook;
+public class XLSX_Convert_HealthUtilisation extends XLSX_Extract {
+	
+	protected File inpath;
+	protected File outpath;
 
     Calendar cal_local = Calendar.getInstance();
     SimpleDateFormat[] dateFormatCollection = new SimpleDateFormat[]{
         new SimpleDateFormat("MMM dd, yyyy")
     };
 
-    public XLSX_Convert(File inpath, File outpath) {
-        this.inpath = inpath;
+    public XLSX_Convert_HealthUtilisation(File inpath, File outpath) {
+        super();
+		this.inpath = inpath;
         this.outpath = outpath;
 
         if (outpath == null) {
@@ -47,7 +43,7 @@ public class XLSX_Convert {
     }
 
     public void convert() {
-        extractWorkbook();
+        extractWorkbook(inpath);
 
         cal_local.setTimeInMillis(System.currentTimeMillis());
 
@@ -248,50 +244,10 @@ public class XLSX_Convert {
         }
     }
 
-    public static String getColumnName(int number) {
-        final StringBuilder sb = new StringBuilder();
-
-        int num = number - 1;
-        while (num >= 0) {
-            int numChar = (num % 26) + 65;
-            sb.append((char) numChar);
-            num = (num / 26) - 1;
-        }
-        return sb.reverse().toString();
-    }
-
-    protected void extractWorkbook() {
-        printOutput("Decoding " + inpath.getAbsolutePath() + "...");
-        srcWorkbook = null;
-        try {
-            OPCPackage pkg = OPCPackage.open(inpath);
-            srcWorkbook = new XSSFWorkbook(pkg);
-            printOutput("success!\n");
-        } catch (InvalidFormatException | IOException ex) {
-            printOutput("FAILED!\n");
-            StringWriter err = new StringWriter();
-            ex.printStackTrace(new PrintWriter(err));
-            printOutput(err.toString() + "\n");
-        }
-
-        if (srcWorkbook != null) {
-            sheets = new XSSFSheet[srcWorkbook.getNumberOfSheets()];
-            for (int i = 0; i < sheets.length; i++) {
-                sheets[i] = srcWorkbook.getSheetAt(i);
-                printOutput(String.format("Sheet #%d: %s\n", i, sheets[i].getSheetName()));
-            }
-
-        }
-    }
-
-    protected void printOutput(String line) {
-        System.out.print(line);
-    }
-
     public static void main(String[] arg) {
         File inPath = new File("C:\\Users\\bhui\\OneDrive - UNSW\\D2EFT\\Data\\Health Eco data for Ben.xlsx");
         File outPath = new File("C:\\Users\\bhui\\Desktop\\Reformatted");
-        XLSX_Convert coverter = new XLSX_Convert(inPath, outPath);
+        XLSX_Convert_HealthUtilisation coverter = new XLSX_Convert_HealthUtilisation(inPath, outPath);
         coverter.convert();
     }
 
