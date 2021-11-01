@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -18,8 +18,6 @@ import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.renderer.category.BoxAndWhiskerRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.statistics.BoxAndWhiskerCalculator;
-import org.jfree.data.statistics.BoxAndWhiskerItem;
 import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset;
 
 import chart.D2EFT_ChartFactory;
@@ -38,6 +36,10 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 	protected static final int RESP_VISIT = RESP_ARM + 1;
 	protected static final int RESP_SF12_START = RESP_VISIT + 1;
 	protected static final int RESP_LENGTH = RESP_SF12_START + D2EFT_QALY_SF12.SF12_LENGTH;
+
+	// Transient objects for look up
+	protected transient Collection<int[]>[][] resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
+	protected transient HashMap<Integer, int[]> resp_index_by_pid = new HashMap<>();
 
 	@Override
 	protected void extractWorkbook(File inpath) {
@@ -101,7 +103,7 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 					} catch (IllegalStateException ex) {
 						String output = cell.getCellType() == CellType.NUMERIC
 								? Double.toString(cell.getNumericCellValue())
-								: cell.getStringCellValue();
+										: cell.getStringCellValue();
 
 						printOutput(String.format("Error in formatting cell at (%d, %s): [%s]\n", rowNum + 1,
 								getColumnName(colNum + 1), output));
@@ -115,12 +117,39 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 		}
 		printOutput(String.format("Extraction completed. Time required = %.3f s\n",
 				(System.currentTimeMillis() - tic) / 1000f));
+
+		// Mapping for quicker lookup
+		Collection<int[]> sf12_resp;
+
+		for (int r = 0; r < resp_sf12.length; r++) {
+
+			int[] resp = resp_sf12[r];
+			if (resp[RESP_ARM] != -1 && resp[RESP_VISIT] != -1) {
+				sf12_resp = resp_map[resp[RESP_ARM]][resp[RESP_VISIT]];
+				if (sf12_resp == null) {
+					resp_map[resp[RESP_ARM]][resp[RESP_VISIT]] = new ArrayList<>();
+					sf12_resp = resp_map[resp[RESP_ARM]][resp[RESP_VISIT]];
+				}
+				sf12_resp.add(Arrays.copyOfRange(resp, RESP_SF12_START, resp.length));
+
+				Integer pid = resp[RESP_ID];
+				int[] index = resp_index_by_pid.get(pid);
+				if (index == null) {
+					index = new int[VISIT_NUM.length];
+					Arrays.fill(index, -1);
+					resp_index_by_pid.put(pid, index);
+				}
+				index[resp[RESP_VISIT]] = r;
+			}
+
+		}
+
 	}
 
 	protected static int matchString(String ent, String[] toMatch) {
 		for (int i = 0; i < toMatch.length; i++) {
 			if (toMatch[i].equals(ent)) {
-				return i; 
+				return i;
 			}
 		}
 		return -1;
@@ -135,7 +164,15 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 				}
 			}
 		}
-		return sf_12_resp;
+		return resp_map[study_arm][visit];
+	}
+
+	public int[] response_lookup_by_row(int row) {
+		return resp_sf12[row];
+	}
+
+	public HashMap<Integer, int[]> getResp_index_by_pid() {
+		return resp_index_by_pid;
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -143,7 +180,8 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 		File xlsx_file = null;
 		if (args.length > 0) {
 			xlsx_file = new File(args[0]);
-		}
+		}			
+
 
 		if (xlsx_file == null || !xlsx_file.isFile()) {
 			javax.swing.JFileChooser jc = new javax.swing.JFileChooser();
@@ -170,84 +208,212 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 			XLSX_Extract_SF_12 wk_extract = new XLSX_Extract_SF_12();
 			wk_extract.extractWorkbook(xlsx_file);
 
-			Collection<int[]>[][] resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
 			Collection<int[]> sf12_resp;
-
 			for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
 				for (int visitNum = 0; visitNum < VISIT_NUM.length; visitNum++) {
-					sf12_resp = wk_extract.response_lookup(studyArm, visitNum);
-					resp_map[studyArm][visitNum] = sf12_resp;
+					sf12_resp = wk_extract.response_lookup(studyArm, visitNum);					
 					System.out.println(String.format("# results for (%s, %s) = %d", STUDY_ARM[studyArm],
 							VISIT_NUM[visitNum], sf12_resp.size()));
-				}
+				}			
 			}
+			
+			File pngFile;
 
 			// Day 0 result comparison
 
-			int[][] sf12_gh1_Freq = new int[STUDY_ARM.length][D2EFT_QALY_SF12.SF12_Options[0].length];
-			Number[][][] summary_val = new Number[STUDY_ARM.length][D2EFT_QALY_SF12.SUMMARY_SCALE_LENGTH][];					
-			
-			
-			for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
-				sf12_resp = resp_map[studyArm][0];
-				int pt = 0;
-				summary_val[studyArm][D2EFT_QALY_SF12.PCS_12] = new Number[sf12_resp.size()];
-				summary_val[studyArm][D2EFT_QALY_SF12.MCS_12] = new Number[sf12_resp.size()];
-				
-				for (int[] resp : sf12_resp) {
-					sf12_gh1_Freq[studyArm][resp[D2EFT_QALY_SF12.SF12_GH1]]++;													
-					float[] summary = D2EFT_QALY_SF12.calulateSummaryScale(resp, 1);					
-					summary_val[studyArm][D2EFT_QALY_SF12.PCS_12][pt] = summary[D2EFT_QALY_SF12.PCS_12];
-					summary_val[studyArm][D2EFT_QALY_SF12.MCS_12][pt] = summary[D2EFT_QALY_SF12.MCS_12];					
-					pt++;
-				}
+			JFreeChart[] day00_Charts = generate_Day00_Chart(wk_extract);
+			for (JFreeChart c : day00_Charts) {
+				D2EFT_ChartFactory.showJFreeChart(c);
 			}
 
-			DefaultCategoryDataset sf12_gh1_dataset = new DefaultCategoryDataset();
-			DefaultBoxAndWhiskerCategoryDataset sf12_summary_dataset = new DefaultBoxAndWhiskerCategoryDataset();
-			
-			for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
-				for (int c = 0; c < sf12_gh1_Freq[studyArm].length; c++) {
-					sf12_gh1_dataset.addValue(((double) sf12_gh1_Freq[studyArm][c]) / resp_map[studyArm][0].size(),
-							STUDY_ARM[studyArm], D2EFT_QALY_SF12.SF12_Options[0][c]);
-				}				
-				
-				sf12_summary_dataset.add(
-						List.of(summary_val[studyArm][D2EFT_QALY_SF12.PCS_12]),						
-						STUDY_ARM[studyArm],"PCS-12");
-				
-					
-				sf12_summary_dataset.add(
-						List.of(summary_val[studyArm][D2EFT_QALY_SF12.MCS_12]), 
-						STUDY_ARM[studyArm],"MCS-12" );
-				
-				
-			}						
-
-			JFreeChart chart_SF12_GH1_Wk0 = ChartFactory.createBarChart(
-					D2EFT_QALY_SF12.SF12_QUESTIONS_TEXT[D2EFT_QALY_SF12.SF12_GH1], "", "Relative Frequency",
-					sf12_gh1_dataset);
-			
-			JFreeChart chart_SF12_Summary_Wk0 = ChartFactory.createBoxAndWhiskerChart(
-					null, null, "Values", sf12_summary_dataset, true);			
-			((BoxAndWhiskerRenderer) chart_SF12_Summary_Wk0.getCategoryPlot().getRenderer()).setMeanVisible(false);	
-			
-			
-
-			//D2EFT_ChartFactory.showJFreeChart(chart_SF12_GH1_Wk0);
-			//D2EFT_ChartFactory.showJFreeChart(chart_SF12_Summary_Wk0);
-
-			
-			
-			File pngFile;
 			pngFile = new File(xlsx_file.getParent(), "SF12_GH1_Wk0.png");
-			//ChartUtils.saveChartAsPNG(pngFile, chart_SF12_GH1_Wk0, 1000, 700, null, true, 0);
+			ChartUtils.saveChartAsPNG(pngFile, day00_Charts[0], 1000, 700, null, true, 0);
 			pngFile = new File(xlsx_file.getParent(), "SF12_Summary_Wk0.png");
-			//ChartUtils.saveChartAsPNG(pngFile, chart_SF12_Summary_Wk0, 1000, 700, null, true, 0);
-			
+			ChartUtils.saveChartAsPNG(pngFile, day00_Charts[1], 1000, 700, null, true, 0);
+
+			// PC-12 and MC-12 comparison
+
+			JFreeChart[] summmaryCharts = generate_Summary_Diff_Chart(wk_extract);
+
+			for (JFreeChart c : summmaryCharts) {
+				D2EFT_ChartFactory.showJFreeChart(c);
+			}
+
+			pngFile = new File(xlsx_file.getParent(), "SF12_PCS-12.png");
+			ChartUtils.saveChartAsPNG(pngFile, summmaryCharts[0], 1000, 700, null, true, 0);
+			pngFile = new File(xlsx_file.getParent(), "SF12_MCS-12.png");
+			ChartUtils.saveChartAsPNG(pngFile, summmaryCharts[1], 1000, 700, null, true, 0);
 
 		}
 
 	}
+	
+	
+	public JFreeChart[] generate_Summary_Diff_Chart() {
+		return generate_Summary_Diff_Chart(this);
+	}
 
+	public static JFreeChart[] generate_Summary_Diff_Chart(XLSX_Extract_SF_12 wk_extract) {
+		HashMap<Integer, int[]> resp_by_id = wk_extract.getResp_index_by_pid();
+
+		ArrayList<Float>[][][] SUMMARY_DIFF = new ArrayList[STUDY_ARM.length][VISIT_NUM.length-1][D2EFT_QALY_SF12.SUMMARY_SCALE_LENGTH];		
+
+		for(Integer pid : resp_by_id.keySet()) {				
+
+			int[] rowNum = resp_by_id.get(pid);
+
+			if(rowNum[0] == -1) {
+				wk_extract.printOutput(String.format("Day 0 visit data missing for PID: %d\n", pid));						
+
+			}else {
+				int[] resp_wk00 = wk_extract.response_lookup_by_row(rowNum[0]);					
+				int studyArm = resp_wk00[RESP_ARM];
+
+				float[] summary_wk00 = D2EFT_QALY_SF12.calulateSummaryScale(
+						Arrays.copyOfRange(resp_wk00, RESP_SF12_START, resp_wk00.length),1);							
+
+				int[] resp_wk48 = null;
+				int[] resp_wk96 = null;
+
+				if(rowNum[1] > 0) {					
+					resp_wk48 = wk_extract.response_lookup_by_row(rowNum[1]);
+					if(resp_wk48[RESP_ARM] != studyArm) {
+						wk_extract.printOutput(
+								String.format("PID %d: Wk 48 visit study arm mismatch."
+										+ " Use Day 0 study arm (%s) instead.\n", pid, STUDY_ARM[studyArm]));	
+					}
+					
+					insertSummaryDiff(SUMMARY_DIFF, studyArm, 0, summary_wk00, resp_wk48);	
+
+				}
+				if(rowNum[2] > 0) {					
+					resp_wk96 = wk_extract.response_lookup_by_row(rowNum[2]);
+					if(resp_wk96[RESP_ARM] != studyArm) {
+						wk_extract.printOutput(
+								String.format("PID %d: Wk 96 visit study arm mismatch for"
+										+ " Use Day 0 study arm (%s) instead.\n", pid, STUDY_ARM[studyArm]));	
+					}	
+					if(resp_wk48 == null) {
+						wk_extract.printOutput(
+								String.format("PID %d: Wk 48 visit missing despite having Wk 96 resp.\n", pid));	
+					}						
+					insertSummaryDiff(SUMMARY_DIFF, studyArm, 1, summary_wk00, resp_wk96);						
+				}										
+
+			}
+
+		}			
+		
+		DefaultBoxAndWhiskerCategoryDataset sf12_pcs_12_diff_dataset = new DefaultBoxAndWhiskerCategoryDataset();
+		DefaultBoxAndWhiskerCategoryDataset sf12_mcs_12_diff_dataset = new DefaultBoxAndWhiskerCategoryDataset();
+		
+		for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
+			for(int visitDiffNum = 0; visitDiffNum < SUMMARY_DIFF[studyArm].length; visitDiffNum++) {
+				sf12_pcs_12_diff_dataset.add(SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.PCS_12], 
+						STUDY_ARM[studyArm], String.format("%s - %s", VISIT_NUM[visitDiffNum+1], VISIT_NUM[0]));
+				sf12_mcs_12_diff_dataset.add(SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.MCS_12], 
+						STUDY_ARM[studyArm], String.format("%s - %s", VISIT_NUM[visitDiffNum+1], VISIT_NUM[0]));
+			}								
+		}
+		
+		
+		JFreeChart chart_SF12_pcs_12_diff = ChartFactory.createBoxAndWhiskerChart(
+				"PCS-12", null, null, sf12_pcs_12_diff_dataset, true);			
+		((BoxAndWhiskerRenderer) chart_SF12_pcs_12_diff.getCategoryPlot().getRenderer()).setMeanVisible(false);
+		
+		JFreeChart chart_SF12_mcs_12_diff = ChartFactory.createBoxAndWhiskerChart(
+				"MCS-12", null, null, sf12_mcs_12_diff_dataset, true);			
+		((BoxAndWhiskerRenderer) chart_SF12_mcs_12_diff.getCategoryPlot().getRenderer()).setMeanVisible(false);
+		
+		
+		
+		JFreeChart[] summmaryChart = new JFreeChart[] {chart_SF12_pcs_12_diff, chart_SF12_mcs_12_diff};
+		return summmaryChart;
+	}
+
+	private static void insertSummaryDiff(ArrayList<Float>[][][] SUMMARY_DIFF, int studyArm, int visitDiffNum,
+			float[] summary_wk00, int[] resp_wk_diff) {
+		if(SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.PCS_12] == null) {							
+			SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.PCS_12] = new ArrayList<Float>();							
+		}
+		if(SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.MCS_12] == null) {
+			SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.MCS_12] = new ArrayList<Float>();
+		}
+
+		boolean hasNA = false;
+
+		for (int s = RESP_SF12_START; s < resp_wk_diff.length && !hasNA; s++) {
+			if (resp_wk_diff[s] < 0) {
+				hasNA = true;
+			}
+		}
+
+		if (!hasNA) {
+			float[] summary_diff = D2EFT_QALY_SF12
+					.calulateSummaryScale(Arrays.copyOfRange(resp_wk_diff, RESP_SF12_START, resp_wk_diff.length), 1);
+
+			SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.PCS_12]
+					.add(summary_diff[D2EFT_QALY_SF12.PCS_12] - summary_wk00[D2EFT_QALY_SF12.PCS_12]);
+			SUMMARY_DIFF[studyArm][visitDiffNum][D2EFT_QALY_SF12.MCS_12]
+					.add(summary_diff[D2EFT_QALY_SF12.MCS_12] - summary_wk00[D2EFT_QALY_SF12.MCS_12]);
+		}
+	}
+	
+	
+	
+	public JFreeChart[] generate_Day00_Chart() {
+		return generate_Day00_Chart(this);
+	}
+	
+
+	public static JFreeChart[] generate_Day00_Chart(XLSX_Extract_SF_12 wk_extract) {
+		Collection<int[]> sf12_resp;
+		int[][] sf12_gh1_Freq = new int[STUDY_ARM.length][D2EFT_QALY_SF12.SF12_Options[0].length];
+		Number[][][] summary_val = new Number[STUDY_ARM.length][D2EFT_QALY_SF12.SUMMARY_SCALE_LENGTH][];					
+
+
+		for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
+			sf12_resp = wk_extract.response_lookup(studyArm, 0);
+			int pt = 0;
+			summary_val[studyArm][D2EFT_QALY_SF12.PCS_12] = new Number[sf12_resp.size()];
+			summary_val[studyArm][D2EFT_QALY_SF12.MCS_12] = new Number[sf12_resp.size()];
+
+			for (int[] resp : sf12_resp) {
+				sf12_gh1_Freq[studyArm][resp[D2EFT_QALY_SF12.SF12_GH1]]++;													
+				float[] summary = D2EFT_QALY_SF12.calulateSummaryScale(resp, 1);					
+				summary_val[studyArm][D2EFT_QALY_SF12.PCS_12][pt] = summary[D2EFT_QALY_SF12.PCS_12];
+				summary_val[studyArm][D2EFT_QALY_SF12.MCS_12][pt] = summary[D2EFT_QALY_SF12.MCS_12];					
+				pt++;
+			}
+		}
+
+		DefaultCategoryDataset sf12_gh1_dataset = new DefaultCategoryDataset();
+		DefaultBoxAndWhiskerCategoryDataset sf12_summary_dataset = new DefaultBoxAndWhiskerCategoryDataset();
+
+		for (int studyArm = 0; studyArm < STUDY_ARM.length; studyArm++) {
+			for (int c = 0; c < sf12_gh1_Freq[studyArm].length; c++) {
+				sf12_gh1_dataset.addValue(((double) sf12_gh1_Freq[studyArm][c]) / wk_extract.response_lookup(studyArm,0).size(),
+						STUDY_ARM[studyArm], D2EFT_QALY_SF12.SF12_Options[0][c]);
+			}				
+
+			sf12_summary_dataset.add(
+					List.of(summary_val[studyArm][D2EFT_QALY_SF12.PCS_12]),						
+					STUDY_ARM[studyArm],"PCS-12");				
+
+			sf12_summary_dataset.add(
+					List.of(summary_val[studyArm][D2EFT_QALY_SF12.MCS_12]), 
+					STUDY_ARM[studyArm],"MCS-12" );								
+		}
+
+
+		JFreeChart chart_SF12_GH1_Wk0 = ChartFactory.createBarChart(
+				D2EFT_QALY_SF12.SF12_QUESTIONS_TEXT[D2EFT_QALY_SF12.SF12_GH1], "", "Relative Frequency",
+				sf12_gh1_dataset);
+
+		JFreeChart chart_SF12_Summary_Wk0 = ChartFactory.createBoxAndWhiskerChart(
+				null, null, null, sf12_summary_dataset, true);			
+		((BoxAndWhiskerRenderer) chart_SF12_Summary_Wk0.getCategoryPlot().getRenderer()).setMeanVisible(false);
+		
+		return new JFreeChart[] {chart_SF12_GH1_Wk0, chart_SF12_Summary_Wk0};
+	}
 }
