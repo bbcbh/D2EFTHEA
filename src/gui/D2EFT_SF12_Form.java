@@ -111,7 +111,9 @@ public class D2EFT_SF12_Form extends JFrame {
 				}				
 				try {
 					float[] scale = D2EFT_QALY_SF12.calulateSummaryScale(ans);
-					String output = String.format("PCS-12 (Physical Score) = %.5f, MCS-12 (Mental Score) = %.5f", scale[0], scale[1]);					
+					String output = String.format("PCS-12 = %.5f, MCS-12 = %.5f, SF-6D (Full) = %.5f, SF-6D (Consistent) = %.5f" ,
+							scale[D2EFT_QALY_SF12.PCS_12], scale[D2EFT_QALY_SF12.MCS_12],  
+							scale[D2EFT_QALY_SF12.SF_6D_FULL], scale[D2EFT_QALY_SF12.SF_6D_CONSISTENT]);					
 					lblOutput.setText(output);
 					
 				} catch (IllegalArgumentException ex) {						

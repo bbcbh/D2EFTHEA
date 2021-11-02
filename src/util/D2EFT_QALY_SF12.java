@@ -67,13 +67,17 @@ public class D2EFT_QALY_SF12 {
 
 	public static final int PCS_12 = 0;
 	public static final int MCS_12 = PCS_12 + 1;
-	public static final int SUMMARY_SCALE_LENGTH = MCS_12 + 1;
+	public static final int SF_6D_FULL = MCS_12 + 1;
+	public static final int SF_6D_CONSISTENT = SF_6D_FULL + 1;
+	public static final int SUMMARY_SCALE_LENGTH = SF_6D_CONSISTENT + 1;
 
-	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020, page 25	
+	
 	public static float[] calulateSummaryScale(int[] sf12) {
 		return calulateSummaryScale(sf12,0);
-	}		
+	}
 	
+	// From Ware et al, "SF-12: how to score the SF-12 ...", 2020, page 25	
+	// SF-6D: Brazier and Roberts, 2004
 	public static float[] calulateSummaryScale(int[] sf12, int offset) {
 
 		float[] summaryScale = new float[SUMMARY_SCALE_LENGTH];
@@ -81,6 +85,11 @@ public class D2EFT_QALY_SF12 {
 		// Constant
 		summaryScale[PCS_12] = 56.57706f;
 		summaryScale[MCS_12] = 60.75781f;
+		summaryScale[SF_6D_FULL] = 1f;
+		summaryScale[SF_6D_CONSISTENT] = 1f;
+		
+		boolean SF_6D_MOST = false;
+		
 
 		for (int i = 0; i < sf12.length; i++) {
 			int val = sf12[i] + offset;
@@ -116,10 +125,14 @@ public class D2EFT_QALY_SF12 {
 				case 1: // Limit a lot
 					summaryScale[PCS_12] += -7.23216f;
 					summaryScale[MCS_12] += 3.93115f;
+					summaryScale[SF_6D_FULL] += -0.040f;
+					summaryScale[SF_6D_CONSISTENT] += -0.045f;
+					SF_6D_MOST |= true;
 					break;
 				case 2: // Limit little
 					summaryScale[PCS_12] += -3.45555f;
 					summaryScale[MCS_12] += 1.86840f;
+					summaryScale[SF_6D_FULL] += 0.012f;
 					break;
 				case 3: // No limit
 					break;
@@ -161,6 +174,21 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[PCS_12] += 3.04365f;
 					summaryScale[MCS_12] += -6.82672f;
 				}
+				
+				// Combined scores SF12_RP3 and SF12_RE2 for 
+				// SF-6D
+				if(val != 5) {					
+					if(sf12[SF12_RP3] != 5) {
+						summaryScale[SF_6D_FULL] += -0.054f;
+						SF_6D_MOST |= true;
+					}else {
+						summaryScale[SF_6D_FULL] += -0.061f;
+					}
+					summaryScale[SF_6D_CONSISTENT] += -0.063f;
+				}else if(sf12[SF12_RP3] != 5) {					
+					summaryScale[SF_6D_FULL] += -0.068f;
+					summaryScale[SF_6D_CONSISTENT] += -0.063f;
+				}														
 				break;
 			case SF12_RE3:
 				if (val != 5) { // Yes
@@ -175,18 +203,26 @@ public class D2EFT_QALY_SF12 {
 				case 2: // A little bit
 					summaryScale[PCS_12] += -3.80130f;
 					summaryScale[MCS_12] += 0.90384f;
+					summaryScale[SF_6D_FULL] += -0.004f;
 					break;
 				case 3: // Moderately
 					summaryScale[PCS_12] += -6.50522f;
 					summaryScale[MCS_12] += 1.49384f;
+					summaryScale[SF_6D_FULL] += -0.039f;
+					summaryScale[SF_6D_CONSISTENT] += -0.042f;
 					break;
 				case 4: // Quite a bit
 					summaryScale[PCS_12] += -8.38063f;
 					summaryScale[MCS_12] += 1.76691f;
+					summaryScale[SF_6D_FULL] += -0.076f;
+					summaryScale[SF_6D_CONSISTENT] += -0.077f;
 					break;
 				case 5: // Extremely
 					summaryScale[PCS_12] += -11.25544f;
 					summaryScale[MCS_12] += 1.48619f;
+					summaryScale[SF_6D_FULL] += -0.140f;
+					summaryScale[SF_6D_CONSISTENT] += -0.137f;
+					SF_6D_MOST |= true;
 					break;
 				default:
 					throw new IllegalArgumentException();
@@ -223,18 +259,27 @@ public class D2EFT_QALY_SF12 {
 				case 2: // Most of the time
 					summaryScale[PCS_12] += -0.42251f;
 					summaryScale[MCS_12] += -0.92057f;
+					summaryScale[SF_6D_FULL] += -0.097f;
+					summaryScale[SF_6D_CONSISTENT] += -0.078f;
 					break;
 				case 3: // Some of the time
 					summaryScale[PCS_12] += -1.61850f;
 					summaryScale[MCS_12] += -3.29805f;
+					summaryScale[SF_6D_FULL] += -0.065f;
+					summaryScale[SF_6D_CONSISTENT] += -0.078f;
 					break;
 				case 4: // A little of the time
 					summaryScale[PCS_12] += -2.02168f;
 					summaryScale[MCS_12] += -4.88962f;
+					summaryScale[SF_6D_FULL] += -0.059f;
+					summaryScale[SF_6D_CONSISTENT] += -0.078f;
 					break;
 				case 5: // None of the time
 					summaryScale[PCS_12] += -2.44706f;
 					summaryScale[MCS_12] += -6.02409f;
+					summaryScale[SF_6D_FULL] += -0.103f;
+					summaryScale[SF_6D_CONSISTENT] += -0.106f;
+					SF_6D_MOST |= true;
 					break;
 				default:
 					throw new IllegalArgumentException();
@@ -245,18 +290,27 @@ public class D2EFT_QALY_SF12 {
 				case 1: // All the time
 					summaryScale[PCS_12] += 4.61446f;
 					summaryScale[MCS_12] += -16.15395f;
+					summaryScale[SF_6D_FULL] += -0.140f;
+					summaryScale[SF_6D_CONSISTENT] += -0.134f;
+					SF_6D_MOST |= true;
 					break;
 				case 2: // Most of the time
 					summaryScale[PCS_12] += 3.41593f;
 					summaryScale[MCS_12] += -10.77911f;
+					summaryScale[SF_6D_FULL] += -0.119f;
+					summaryScale[SF_6D_CONSISTENT] += -0.113f;
 					break;
 				case 3: // Some of the time
 					summaryScale[PCS_12] += 1.28044f;
 					summaryScale[MCS_12] += -4.59055f;
+					summaryScale[SF_6D_FULL] += -0.055f;
+					summaryScale[SF_6D_CONSISTENT] += -0.059f;
 					break;
 				case 4: // A little of the time
 					summaryScale[PCS_12] += 0.41188f;
 					summaryScale[MCS_12] += -1.95934f;
+					summaryScale[SF_6D_FULL] += -0.063f;
+					summaryScale[SF_6D_CONSISTENT] += -0.059f;
 					break;
 				case 5: // None of the time
 					break;
@@ -269,18 +323,27 @@ public class D2EFT_QALY_SF12 {
 				case 1: // All the time
 					summaryScale[PCS_12] += -0.33682f;
 					summaryScale[MCS_12] += -6.29724f;
+					summaryScale[SF_6D_FULL] += -0.093f;
+					summaryScale[SF_6D_CONSISTENT] += -0.093f;
+					SF_6D_MOST |= true;
 					break;
 				case 2: // Most of the time
 					summaryScale[PCS_12] += -0.94342f;
 					summaryScale[MCS_12] += -8.26066f;
+					summaryScale[SF_6D_FULL] += -0.078f;
+					summaryScale[SF_6D_CONSISTENT] += -0.081f;
 					break;
 				case 3: // Some of the time
 					summaryScale[PCS_12] += -0.18043f;
 					summaryScale[MCS_12] += -5.63286f;
+					summaryScale[SF_6D_FULL] += -0.069f;
+					summaryScale[SF_6D_CONSISTENT] += -0.066f;
 					break;
 				case 4: // A little of the time
 					summaryScale[PCS_12] += 0.11038f;
 					summaryScale[MCS_12] += -3.13896f;
+					summaryScale[SF_6D_FULL] += -0.059f;
+					summaryScale[SF_6D_CONSISTENT] += -0.063f;
 					break;
 				case 5: // None of the time
 					break;
@@ -292,6 +355,11 @@ public class D2EFT_QALY_SF12 {
 				throw new IllegalArgumentException();
 			}
 
+		}
+		
+		if(SF_6D_MOST) {
+			summaryScale[SF_6D_FULL] += -0.085f;
+			summaryScale[SF_6D_CONSISTENT] += -0.077f;
 		}
 
 		return summaryScale;
