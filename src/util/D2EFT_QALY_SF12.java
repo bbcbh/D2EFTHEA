@@ -273,15 +273,14 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[PCS_12] += -2.02168f;
 					summaryScale[MCS_12] += -4.88962f;
 					summaryScale[SF_6D_FULL] += -0.059f;
-					summaryScale[SF_6D_CONSISTENT] += -0.078f;	
-					SF_6D_MOST |= true; // Lv 4 and 5 for vitality
+					summaryScale[SF_6D_CONSISTENT] += -0.078f;					
 					break;
 				case 5: // None of the time
 					summaryScale[PCS_12] += -2.44706f;
 					summaryScale[MCS_12] += -6.02409f;
 					summaryScale[SF_6D_FULL] += -0.103f;
 					summaryScale[SF_6D_CONSISTENT] += -0.106f;
-					SF_6D_MOST |= true; // Lv 4 and 5 for vitality
+					SF_6D_MOST |= true; // Lv 5 for vitality
 					break;
 				default:
 					throw new IllegalArgumentException();

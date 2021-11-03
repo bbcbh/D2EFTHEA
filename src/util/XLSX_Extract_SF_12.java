@@ -228,11 +228,12 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 				D2EFT_ChartFactory.showJFreeChart(c);
 			}
 
+		
 			pngFile = new File(xlsx_file.getParent(), "SF12_GH1_Wk0.png");
 			ChartUtils.saveChartAsPNG(pngFile, day00_Charts[0], 1000, 700, null, true, 0);
 			pngFile = new File(xlsx_file.getParent(), "SF12_Summary_Wk0.png");
-			ChartUtils.saveChartAsPNG(pngFile, day00_Charts[1], 1000, 700, null, true, 0);
-
+			ChartUtils.saveChartAsPNG(pngFile, day00_Charts[1], 1000, 700, null, true, 0);           			
+			
 			// PC-12 and MC-12 comparison
 
 			JFreeChart[] summmaryCharts = generate_Summary_Chart(wk_extract);
@@ -251,6 +252,8 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 			ChartUtils.saveChartAsPNG(pngFile, summmaryCharts[3], 1000, 700, null, true, 0);
 
 		}
+		
+		System.out.println("All done!");
 
 	}
 
