@@ -127,7 +127,7 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[MCS_12] += 3.93115f;
 					summaryScale[SF_6D_FULL] += -0.040f;
 					summaryScale[SF_6D_CONSISTENT] += -0.045f;
-					SF_6D_MOST |= true;
+					SF_6D_MOST |= true; // Lv 3 for physical functioning
 					break;
 				case 2: // Limit little
 					summaryScale[PCS_12] += -3.45555f;
@@ -179,12 +179,12 @@ public class D2EFT_QALY_SF12 {
 				// SF-6D
 				if(val != 5) {					
 					if(sf12[SF12_RP3] != 5) {
-						summaryScale[SF_6D_FULL] += -0.054f;
-						SF_6D_MOST |= true;
+						summaryScale[SF_6D_FULL] += -0.054f;						
 					}else {
 						summaryScale[SF_6D_FULL] += -0.061f;
 					}
 					summaryScale[SF_6D_CONSISTENT] += -0.063f;
+					SF_6D_MOST |= true; // Lv 3 and 4 for role limitation
 				}else if(sf12[SF12_RP3] != 5) {					
 					summaryScale[SF_6D_FULL] += -0.068f;
 					summaryScale[SF_6D_CONSISTENT] += -0.063f;
@@ -216,13 +216,14 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[MCS_12] += 1.76691f;
 					summaryScale[SF_6D_FULL] += -0.076f;
 					summaryScale[SF_6D_CONSISTENT] += -0.077f;
+					SF_6D_MOST |= true; // Lv 4 or 5 for pain 
 					break;
 				case 5: // Extremely
 					summaryScale[PCS_12] += -11.25544f;
 					summaryScale[MCS_12] += 1.48619f;
 					summaryScale[SF_6D_FULL] += -0.140f;
 					summaryScale[SF_6D_CONSISTENT] += -0.137f;
-					SF_6D_MOST |= true;
+					SF_6D_MOST |= true; // Lv 4 or 5 for pain 
 					break;
 				default:
 					throw new IllegalArgumentException();
@@ -272,14 +273,15 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[PCS_12] += -2.02168f;
 					summaryScale[MCS_12] += -4.88962f;
 					summaryScale[SF_6D_FULL] += -0.059f;
-					summaryScale[SF_6D_CONSISTENT] += -0.078f;
+					summaryScale[SF_6D_CONSISTENT] += -0.078f;	
+					SF_6D_MOST |= true; // Lv 4 and 5 for vitality
 					break;
 				case 5: // None of the time
 					summaryScale[PCS_12] += -2.44706f;
 					summaryScale[MCS_12] += -6.02409f;
 					summaryScale[SF_6D_FULL] += -0.103f;
 					summaryScale[SF_6D_CONSISTENT] += -0.106f;
-					SF_6D_MOST |= true;
+					SF_6D_MOST |= true; // Lv 4 and 5 for vitality
 					break;
 				default:
 					throw new IllegalArgumentException();
@@ -292,13 +294,14 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[MCS_12] += -16.15395f;
 					summaryScale[SF_6D_FULL] += -0.140f;
 					summaryScale[SF_6D_CONSISTENT] += -0.134f;
-					SF_6D_MOST |= true;
+					SF_6D_MOST |= true; // Lv 4 and 5 for mental health
 					break;
 				case 2: // Most of the time
 					summaryScale[PCS_12] += 3.41593f;
 					summaryScale[MCS_12] += -10.77911f;
 					summaryScale[SF_6D_FULL] += -0.119f;
 					summaryScale[SF_6D_CONSISTENT] += -0.113f;
+					SF_6D_MOST |= true; // Lv 4 and 5 for mental health
 					break;
 				case 3: // Some of the time
 					summaryScale[PCS_12] += 1.28044f;
@@ -325,13 +328,14 @@ public class D2EFT_QALY_SF12 {
 					summaryScale[MCS_12] += -6.29724f;
 					summaryScale[SF_6D_FULL] += -0.093f;
 					summaryScale[SF_6D_CONSISTENT] += -0.093f;
-					SF_6D_MOST |= true;
+					SF_6D_MOST |= true; // Lv 4 and 5 for social functioning
 					break;
 				case 2: // Most of the time
 					summaryScale[PCS_12] += -0.94342f;
 					summaryScale[MCS_12] += -8.26066f;
 					summaryScale[SF_6D_FULL] += -0.078f;
 					summaryScale[SF_6D_CONSISTENT] += -0.081f;
+					SF_6D_MOST |= true; // Lv 4 and 5 for social functioning
 					break;
 				case 3: // Some of the time
 					summaryScale[PCS_12] += -0.18043f;
