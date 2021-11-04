@@ -6,7 +6,7 @@ import org.apache.commons.math3.random.EmpiricalDistribution;
 
 public class Distribution_Factory {
 
-	public static EmpiricalDistribution generateEmpiricalDistribution(double[] val, int[] freq) {
+	public static EmpiricalDistribution generateEmpiricalDistributionByFreq(double[] val, int[] freq) {
 
 		int count = Arrays.stream(freq).sum();
 		double[] data = new double[count];
