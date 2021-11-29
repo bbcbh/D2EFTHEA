@@ -36,6 +36,12 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 	public static final int RESP_VISIT = RESP_ARM + 1;
 	public static final int RESP_SF12_START = RESP_VISIT + 1;
 	public static final int RESP_LENGTH = RESP_SF12_START + D2EFT_QALY_SF12.SF12_LENGTH;
+		
+	public static final int SF_6D_MAP_STUDY_ARM = 0;
+	public static final int SF_6D_MAP_WK_00 = SF_6D_MAP_STUDY_ARM + 1;
+	public static final int SF_6D_MAP_WK_48 =  SF_6D_MAP_WK_00 +1;
+	public static final int SF_6D_MAP_WK_96 = SF_6D_MAP_WK_48 + 1; 
+	public static final int SF_6D_MAP_LENGTH = SF_6D_MAP_WK_96 + 1;
 
 	// Transient objects for look up
 	@SuppressWarnings("unchecked")
@@ -285,10 +291,81 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 	public JFreeChart[] generate_Summary_Diff_Chart() {
 		return generate_Summary_Chart(this);
 	}
+	
+	
+	
+	public HashMap<Integer, float[]> generate_SF6D_Mapping() {
+
+		HashMap<Integer, int[]> resp_by_id = getResp_index_by_pid();
+		HashMap<Integer, float[]> sf_6d_dataset = new HashMap<>(); // Id => study_arm, wk_0, wk_48, wk_96
+
+		for (Integer pid : resp_by_id.keySet()) {
+
+			float[] ent = new float[SF_6D_MAP_LENGTH];
+			Arrays.fill(ent, Float.NaN);
+
+			int[] rowNum = resp_by_id.get(pid);
+
+			if (rowNum[0] == -1) {
+				printOutput(String.format("Day 0 visit data missing for PID: %d\n", pid));
+			} else {
+				int[] resp_wk00 = response_lookup_by_row(rowNum[0]);
+
+				ent[SF_6D_MAP_STUDY_ARM] = resp_wk00[RESP_ARM];
+
+				float[] summary_wk00 = D2EFT_QALY_SF12
+						.calulateSummaryScale(Arrays.copyOfRange(resp_wk00, RESP_SF12_START, resp_wk00.length), 1);
+
+				ent[SF_6D_MAP_WK_00] = summary_wk00[D2EFT_QALY_SF12.SF_6D_CONSISTENT];
+
+				int[] resp_wk48 = null;
+				int[] resp_wk96 = null;
+
+				if (rowNum[1] > 0) {
+					resp_wk48 = response_lookup_by_row(rowNum[1]);
+					if (resp_wk48[RESP_ARM] != ent[SF_6D_MAP_STUDY_ARM]) {
+						printOutput(String.format(
+								"PID %d: Wk 48 visit study arm mismatch." + " Use Day 0 study arm (%s) instead.\n", pid,
+								STUDY_ARM[(int) ent[SF_6D_MAP_STUDY_ARM]]));
+					}
+
+					float[] summary_wk48 = D2EFT_QALY_SF12
+							.calulateSummaryScale(Arrays.copyOfRange(resp_wk48, RESP_SF12_START, resp_wk48.length), 1);
+					if (summary_wk48 != null) {
+						ent[SF_6D_MAP_WK_48] = summary_wk48[D2EFT_QALY_SF12.SF_6D_CONSISTENT];
+					}
+
+				}
+				if (rowNum[2] > 0) {
+					resp_wk96 = response_lookup_by_row(rowNum[2]);
+					if (resp_wk96[RESP_ARM] != ent[SF_6D_MAP_STUDY_ARM]) {
+						printOutput(String.format(
+								"PID %d: Wk 96 visit study arm mismatch for" + " Use Day 0 study arm (%s) instead.\n",
+								pid, STUDY_ARM[(int) ent[SF_6D_MAP_STUDY_ARM]]));
+					}
+					if (resp_wk48 == null) {
+						printOutput(String.format("PID %d: Wk 48 visit missing despite having Wk 96 resp.\n", pid));
+					}
+					float[] summary_wk96 = D2EFT_QALY_SF12
+							.calulateSummaryScale(Arrays.copyOfRange(resp_wk96, RESP_SF12_START, resp_wk96.length), 1);
+					if (summary_wk96 != null) {
+						ent[SF_6D_MAP_WK_96] = summary_wk96[D2EFT_QALY_SF12.SF_6D_CONSISTENT];
+					}
+				}
+				sf_6d_dataset.put(pid, ent);
+			}
+		}
+
+		return sf_6d_dataset;
+	}
+	
+	
+	
 
 	public static JFreeChart[] generate_Summary_Chart(XLSX_Extract_SF_12 wk_extract) {
 		HashMap<Integer, int[]> resp_by_id = wk_extract.getResp_index_by_pid();
 
+		@SuppressWarnings("unchecked")
 		ArrayList<Float>[][][] SUMMARY_DIFF = new ArrayList[STUDY_ARM.length][VISIT_NUM.length
 				- 1][D2EFT_QALY_SF12.SUMMARY_SCALE_LENGTH];
 
@@ -358,6 +435,7 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 			}
 
 		}
+		
 
 		DefaultBoxAndWhiskerCategoryDataset[] sf12_diff_dataset = new DefaultBoxAndWhiskerCategoryDataset[D2EFT_QALY_SF12.SUMMARY_SCALE_LENGTH];
 

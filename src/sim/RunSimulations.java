@@ -1,50 +1,48 @@
 package sim;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
-
-import util.D2EFT_QALY_SF12;
 import util.XLSX_Extract_SF_12;
 
 public class RunSimulations {
 
 	private XLSX_Extract_SF_12 wk_extract = null;
-	private Float[][] day_zero_qaly; // [Study arm]{...}
+	private float[][] qaly_mapping; //[]{study_arm, wk_0, wk_48, wk_96}	
+	private int[] mapping_study_arm_offset = new int[XLSX_Extract_SF_12.STUDY_ARM.length];
 
 	public void loadWorkbook(File workbookFile) {
 		wk_extract = new XLSX_Extract_SF_12();
 		wk_extract.loadWorkbook(workbookFile);
-
-		day_zero_qaly = new Float[XLSX_Extract_SF_12.STUDY_ARM.length][];
-
-		ArrayList<Float>[] qaly_tally = new ArrayList[day_zero_qaly.length];
-
-		for (int s = 0; s < qaly_tally.length; s++) {
-			qaly_tally[s] = new ArrayList<Float>();
-
+		
+		HashMap<Integer, float[]> sf_6d_mapping = wk_extract.generate_SF6D_Mapping();
+		
+		qaly_mapping = new float[sf_6d_mapping.size()][XLSX_Extract_SF_12.SF_6D_MAP_LENGTH];	
+		
+		int pt_total = 0;
+		int[] pt_diff = new int[XLSX_Extract_SF_12.STUDY_ARM.length];
+		
+		for (Integer pid : sf_6d_mapping.keySet()) {
+			qaly_mapping[pt_total] = sf_6d_mapping.get(pid);			
+			pt_diff[(int) qaly_mapping[pt_total][XLSX_Extract_SF_12.SF_6D_MAP_STUDY_ARM]] ++;
+			pt_total++;
+		}	
+		
+		// Sort by study arm
+		Arrays.sort(qaly_mapping, new Comparator<float[]>() {
+			@Override
+			public int compare(float[] o1, float[] o2) {				
+				return Integer.compare((int) o1[XLSX_Extract_SF_12.SF_6D_MAP_STUDY_ARM], 
+						(int) o2[XLSX_Extract_SF_12.SF_6D_MAP_STUDY_ARM]) ;
+			}
+		});
+		
+		for (int a = 1; a < mapping_study_arm_offset.length; a++) {
+			mapping_study_arm_offset[a] = mapping_study_arm_offset[a - 1] + pt_diff[a - 1];
 		}
-
-		HashMap<Integer, int[]> resp_by_id = wk_extract.getResp_index_by_pid();
-
-		for (Integer pid : resp_by_id.keySet()) {
-			int[] rowNum = resp_by_id.get(pid);
-			int[] resp_wk00 = wk_extract.response_lookup_by_row(rowNum[0]);
-			int study_arm = resp_wk00[XLSX_Extract_SF_12.RESP_ARM];
-			float[] summary_wk00 = D2EFT_QALY_SF12.calulateSummaryScale(
-					Arrays.copyOfRange(resp_wk00, XLSX_Extract_SF_12.RESP_SF12_START, resp_wk00.length), 1);
-			qaly_tally[study_arm].add(summary_wk00[D2EFT_QALY_SF12.SF_6D_CONSISTENT]);
-
-		}
-
-		for (int s = 0; s < qaly_tally.length; s++) {
-			day_zero_qaly[s] = qaly_tally[s].toArray(new Float[qaly_tally[s].size()]);
-			
-			
-			
-		}
-
+		
+		
 	}
 
 	public static void main(String[] args) {
