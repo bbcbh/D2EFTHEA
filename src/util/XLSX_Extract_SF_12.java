@@ -16,14 +16,11 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BoxAndWhiskerRenderer;
-import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset;
 
 import chart.D2EFT_ChartFactory;
-import gui.D2EFT_SF12_Form;
 
 public class XLSX_Extract_SF_12 extends XLSX_Extract {
 
@@ -33,16 +30,21 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 	protected int[][] resp_sf12;
 	protected Date[] dateCompleted;
 
-	protected static final int RESP_ID = 0;
-	protected static final int RESP_SITE = RESP_ID + 1;
-	protected static final int RESP_ARM = RESP_SITE + 1;
-	protected static final int RESP_VISIT = RESP_ARM + 1;
-	protected static final int RESP_SF12_START = RESP_VISIT + 1;
-	protected static final int RESP_LENGTH = RESP_SF12_START + D2EFT_QALY_SF12.SF12_LENGTH;
+	public static final int RESP_ID = 0;
+	public static final int RESP_SITE = RESP_ID + 1;
+	public static final int RESP_ARM = RESP_SITE + 1;
+	public static final int RESP_VISIT = RESP_ARM + 1;
+	public static final int RESP_SF12_START = RESP_VISIT + 1;
+	public static final int RESP_LENGTH = RESP_SF12_START + D2EFT_QALY_SF12.SF12_LENGTH;
 
 	// Transient objects for look up
+	@SuppressWarnings("unchecked")
 	protected transient Collection<int[]>[][] resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
 	protected transient HashMap<Integer, int[]> resp_index_by_pid = new HashMap<>();
+	
+	public void loadWorkbook(File inpath) {
+		extractWorkbook(inpath);
+	}	
 
 	@Override
 	protected void extractWorkbook(File inpath) {
@@ -159,6 +161,7 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 	}
 
 	public Collection<int[]> response_lookup(int study_arm, int visit) {
+		/*
 		ArrayList<int[]> sf_12_resp = new ArrayList<>();
 		for (int[] resp : resp_sf12) {
 			if (study_arm == -1 || resp[RESP_ARM] == study_arm) {
@@ -167,6 +170,7 @@ public class XLSX_Extract_SF_12 extends XLSX_Extract {
 				}
 			}
 		}
+		*/
 		return resp_map[study_arm][visit];
 	}
 
