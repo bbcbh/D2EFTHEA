@@ -3,7 +3,7 @@ package person;
 import java.util.Arrays;
 
 public class D2EFT_HEA_Person{
-	private int id;
+	private long id;
 	private int study_arm;
 
 	private int[] interpol_study_day;
@@ -14,7 +14,7 @@ public class D2EFT_HEA_Person{
 	public static final int STUDY_ARM_DOL = STUDY_ARM_SOC + 1;
 	public static final int STUDY_ARM_D2N = STUDY_ARM_DOL + 1;
 
-	public D2EFT_HEA_Person(int id, int study_arm) {
+	public D2EFT_HEA_Person(long id, int study_arm) {
 		super();
 		this.id = id;
 		this.study_arm = study_arm;		
@@ -33,7 +33,7 @@ public class D2EFT_HEA_Person{
 		this.interpol_CD4_count = interpol_CD4_count;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
