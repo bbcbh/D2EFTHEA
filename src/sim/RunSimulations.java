@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 
-import sim.runnable.GenerateSingleQALYComparsion;
+import sim.runnable.Runnable_SingleQALYComparsion;
 import util.XLSX_Extract_SF_12;
 
 public class RunSimulations {
@@ -73,7 +73,7 @@ public class RunSimulations {
 			System.out.println(String.format("%4d: %s", i, Arrays.toString(qaly_mapping[i])));
 		}		
 		
-		GenerateSingleQALYComparsion cmp = new GenerateSingleQALYComparsion(22519121217l, 
+		Runnable_SingleQALYComparsion cmp = new Runnable_SingleQALYComparsion(22519121217l, 
 				qaly_mapping, mapping_study_arm_offset, day_0_qalys);
 		
 		cmp.run();
