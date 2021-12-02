@@ -45,6 +45,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 		result.put(KEY_DAY_0_QALY, day_0_qaly);
 
 		D2EFT_HEA_Person[] cmpPerson = new D2EFT_HEA_Person[mapping_study_arm_offset.length];
+		float[][] vaild_qaly_mapping = qaly_mapping;
 
 		for (int s = 0; s < mapping_study_arm_offset.length; s++) {
 
@@ -56,58 +57,72 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 					: mapping_study_arm_offset.length; // Non-Inclusive
 			float sampleVal = day_0_qaly;
 
-			for (int visitResPt : new int[] { 1, 2 }) { // 1 = Wk_00, 2 = Wk_48
-				QALY_MAPPING_COMPARATOR cmp = new QALY_MAPPING_COMPARATOR(visitResPt);
-				float[] searchKey = new float[qaly_mapping[0].length];
+			
+			int[] visit_to_sample = new int[] { 1, 2 }; // 1 = Wk_00, 2 = Wk_48
+			
+			QALY_MAPPING_COMPARATOR cmp = new QALY_MAPPING_COMPARATOR(visit_to_sample[0]);
+
+			for (int vPt =0; vPt < visit_to_sample.length; vPt++) {
+				
+				vaild_qaly_mapping = Arrays.copyOfRange(vaild_qaly_mapping, sampleRangeStartPt, sampleRangeEndPt);
+				
+				int visitResPt = visit_to_sample[vPt];				
+				float[] searchKey = new float[vaild_qaly_mapping[0].length];
 				searchKey[visitResPt] = sampleVal;
 
-				int midPt = Arrays.binarySearch(qaly_mapping, sampleRangeStartPt, sampleRangeEndPt, searchKey, cmp);
+				int midPt = Arrays.binarySearch(vaild_qaly_mapping, searchKey, cmp);
 				if (midPt < 0) {
 					midPt = ~midPt;
 				}
 
 				int[] posToInclude = new int[] { midPt, midPt };
 
-				while (posToInclude[0] > sampleRangeStartPt && (qaly_mapping[posToInclude[0] - 1][visitResPt]) >= Math
-						.max(0, sampleVal - DELTA_QALY_RANGE)) {
+				while (posToInclude[0] > sampleRangeStartPt
+						&& (vaild_qaly_mapping[posToInclude[0] - 1][visitResPt]) >= Math.max(0,
+								sampleVal - DELTA_QALY_RANGE)) {
 					posToInclude[0]--;
 				}
 				while ((posToInclude[1]) < sampleRangeEndPt
-						&& qaly_mapping[posToInclude[1]][visitResPt] < sampleVal + DELTA_QALY_RANGE) {
+						&& vaild_qaly_mapping[posToInclude[1]][visitResPt] < sampleVal + DELTA_QALY_RANGE) {
 					posToInclude[1]++;
 				}
-				
+
 				double[] sampleResult;
 
 				if (posToInclude[1] > posToInclude[0]) {
 					sampleResult = new double[posToInclude[1] - posToInclude[0]];
 					for (int i = 0; i < sampleResult.length; i++) {
-						sampleResult[i] = qaly_mapping[posToInclude[0] + i][visitResPt + 1];
+						sampleResult[i] = vaild_qaly_mapping[posToInclude[0] + i][visitResPt + 1];
 					}
-					Arrays.sort(sampleResult);					
+
+					Arrays.sort(sampleResult);
 					int toInclude = sampleResult.length;
-					while(Double.isNaN(sampleResult[toInclude-1])) {
+					while (Double.isNaN(sampleResult[toInclude - 1])) {
 						toInclude--;
-					}										
+					}
 					sampleResult = Arrays.copyOf(sampleResult, toInclude);
-				}else {
-					sampleResult = new double[] {qaly_mapping[posToInclude[0]][visitResPt + 1]};
+				} else {
+					sampleResult = new double[] { vaild_qaly_mapping[posToInclude[0]][visitResPt + 1] };
 				}
-				
-				if(sampleResult.length > 0)	{								
+
+				if (sampleResult.length > 0) {
 					EmpiricalDistribution dist = new EmpiricalDistribution(rng);
 					dist.load(sampleResult);
 					interpol_QALY[visitResPt] = (float) dist.sample();
+
 				} else {
 					interpol_QALY[visitResPt] = (float) sampleResult[0];
-				}
-				
+				}				
 				
 				// Set up next search
-				sampleVal = interpol_QALY[visitResPt] ;
-				sampleRangeStartPt = posToInclude[0];
-				sampleRangeEndPt = posToInclude[1];
-				
+				if (vPt+1 < visit_to_sample.length) {
+					sampleVal = interpol_QALY[visitResPt];					
+					sampleRangeStartPt = posToInclude[0];
+					sampleRangeEndPt = posToInclude[1];
+					cmp = new QALY_MAPPING_COMPARATOR(visit_to_sample[vPt+ 1]);
+					Arrays.sort(vaild_qaly_mapping, sampleRangeStartPt, sampleRangeEndPt,cmp);
+				}
+
 			}
 
 			cmpPerson[s].setInterpol_study_day(new int[] { 0, 48 * 7, 96 * 7 });
