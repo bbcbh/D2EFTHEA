@@ -12,12 +12,13 @@ import person.D2EFT_HEA_Person;
 
 public class Runnable_SingleQALYComparsion implements Runnable {
 
-	public static String KEY_SEED = "KEY_SEED";
-	public static String KEY_DAY_0_QALY = "KEY_DAY_0_QALY";
-	public static String KEY_QALY = "KEY_QALY";
+	public static final String KEY_SEED = "KEY_SEED";
+	public static final String KEY_DAY_0_QALY = "KEY_DAY_0_QALY";
+	public static final String KEY_QALY = "KEY_QALY";
+	public static final float DEFAULT_DELTA_QALY_RANGE = 0.05f;
+	
 
-	private static final float DELTA_QALY_RANGE = 0.05f;
-
+	private final float delta_qaly; 
 	private final long seed;
 	private final float[] day_0_qalys;
 	private final float[][] qaly_mapping; // []{study_arm, wk_0, wk_48, wk_96}
@@ -25,14 +26,21 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 	private HashMap<String, Object> result;
 
+	
+	
 	public Runnable_SingleQALYComparsion(final long seed, final float[][] qaly_mapping,
-			final int[] mapping_study_arm_offset, final float[] day_0_qalys) {
-
+			final int[] mapping_study_arm_offset, final float[] day_0_qalys, float delta_qaly) {		
 		this.seed = seed;
 		this.qaly_mapping = qaly_mapping;
 		this.mapping_study_arm_offset = mapping_study_arm_offset;
 		this.day_0_qalys = day_0_qalys;
+		this.delta_qaly = delta_qaly;
 		result = new HashMap<String, Object>();
+	}
+	
+	public Runnable_SingleQALYComparsion(final long seed, final float[][] qaly_mapping,
+			final int[] mapping_study_arm_offset, final float[] day_0_qalys) {
+		this(seed, qaly_mapping, mapping_study_arm_offset, day_0_qalys, DEFAULT_DELTA_QALY_RANGE);
 	}
 
 	@Override
@@ -77,13 +85,13 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 				int[] posToInclude = new int[] { midPt, midPt };
 
-				while (posToInclude[0] > sampleRangeStartPt
+				while (posToInclude[0] > 0
 						&& (vaild_qaly_mapping[posToInclude[0] - 1][visitResPt]) >= Math.max(0,
-								sampleVal - DELTA_QALY_RANGE)) {
+								sampleVal - delta_qaly)) {
 					posToInclude[0]--;
 				}
-				while ((posToInclude[1]) < sampleRangeEndPt
-						&& vaild_qaly_mapping[posToInclude[1]][visitResPt] < sampleVal + DELTA_QALY_RANGE) {
+				while ((posToInclude[1]) < vaild_qaly_mapping.length
+						&& vaild_qaly_mapping[posToInclude[1]][visitResPt] < sampleVal + delta_qaly) {
 					posToInclude[1]++;
 				}
 
