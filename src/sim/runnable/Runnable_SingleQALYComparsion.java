@@ -14,7 +14,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 	public static final String KEY_SEED = "KEY_SEED";
 	public static final String KEY_DAY_0_QALY = "KEY_DAY_0_QALY";
-	public static final String KEY_QALY = "KEY_QALY";
+	public static final String KEY_HEA_PERSON = "KEY_HEA_PERSON";
 	public static final float DEFAULT_DELTA_QALY_RANGE = 0.05f;
 	
 
@@ -23,6 +23,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 	private final float[] day_0_qalys;
 	private final float[][] qaly_mapping; // []{study_arm, wk_0, wk_48, wk_96}
 	private final int[] mapping_study_arm_offset;
+	
 
 	private HashMap<String, Object> result;
 
@@ -53,16 +54,17 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 		result.put(KEY_DAY_0_QALY, day_0_qaly);
 
 		D2EFT_HEA_Person[] cmpPerson = new D2EFT_HEA_Person[mapping_study_arm_offset.length];
-		float[][] vaild_qaly_mapping = qaly_mapping;
+		float[][] vaild_qaly_mapping;
 
 		for (int s = 0; s < mapping_study_arm_offset.length; s++) {
-
+			
+			vaild_qaly_mapping = qaly_mapping;
 			cmpPerson[s] = new D2EFT_HEA_Person(seed, s);
 			float[] interpol_QALY = new float[] { day_0_qaly, Float.NaN, Float.NaN };
 
 			int sampleRangeStartPt = mapping_study_arm_offset[s]; // Inclusive
 			int sampleRangeEndPt = (s + 1) < mapping_study_arm_offset.length ? mapping_study_arm_offset[s + 1]
-					: mapping_study_arm_offset.length; // Non-Inclusive
+					: vaild_qaly_mapping.length; // Non-Inclusive
 			float sampleVal = day_0_qaly;
 
 			
@@ -135,7 +137,12 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 			cmpPerson[s].setInterpol_study_day(new int[] { 0, 48 * 7, 96 * 7 });
 			cmpPerson[s].setInterpol_QALY(interpol_QALY);
+			cmpPerson[s].generatePolyFit(2);
 		}
+		
+		result.put(KEY_HEA_PERSON, cmpPerson);			
+		
+		
 	}
 
 	public HashMap<String, Object> getResult() {

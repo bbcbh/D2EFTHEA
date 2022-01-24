@@ -2,17 +2,26 @@ package person;
 
 import java.util.Arrays;
 
+import org.apache.commons.math3.fitting.PolynomialCurveFitter;
+import org.apache.commons.math3.fitting.WeightedObservedPoints;
+
 public class D2EFT_HEA_Person{
 	private long id;
 	private int study_arm;
-
-	private int[] interpol_study_day;
-	private float[] interpol_QALY;
-	private float[] interpol_CD4_count;		
+	private int[] interpol_study_day;			
 
 	public static final int STUDY_ARM_SOC = 0;
 	public static final int STUDY_ARM_DOL = STUDY_ARM_SOC + 1;
 	public static final int STUDY_ARM_D2N = STUDY_ARM_DOL + 1;
+	
+	public static final int INDEX_QALY = 0;
+	public static final int INDEX_CD4 = INDEX_QALY + 1;
+	public static final int INDEX_LENGTH = INDEX_CD4 + 1;
+	
+	private float[][] interpol = new float[INDEX_LENGTH][]; 
+	private double[][] polyFit = new double[INDEX_LENGTH][];
+	
+	
 
 	public D2EFT_HEA_Person(long id, int study_arm) {
 		super();
@@ -26,11 +35,11 @@ public class D2EFT_HEA_Person{
 
 
 	public void setInterpol_QALY(float[] interpol_QALY) {
-		this.interpol_QALY = interpol_QALY;
+		interpol[INDEX_QALY] = interpol_QALY;
 	}
 
 	public void setInterpol_CD4_count(float[] interpol_CD4_count) {
-		this.interpol_CD4_count = interpol_CD4_count;
+		interpol[INDEX_CD4] = interpol_CD4_count;
 	}
 
 	public long getId() {
@@ -49,12 +58,49 @@ public class D2EFT_HEA_Person{
 	}
 	
 	public float getQALYByPos(int day, int pos) {
-		return interpolation_linear_by_pos(interpol_QALY,day,pos);		
+		return interpolation_linear_by_pos(interpol[INDEX_QALY],day,pos);		
 	}
 	
 	public float getCD4ByPos(int day, int pos) {
-		return interpolation_linear_by_pos(interpol_CD4_count,day,pos);		
+		return interpolation_linear_by_pos(interpol[INDEX_CD4],day,pos);		
 	}		
+	
+	
+	public double getQALYByFit(int day) {
+		return getPolyFit(polyFit[INDEX_QALY], day);
+	}
+	
+	public double getCD4ByFit(int day) {
+		return getPolyFit(polyFit[INDEX_CD4], day);
+	}
+	
+	private double getPolyFit(double[] polyCoff, int day) {
+		if(polyCoff == null) {
+			throw new NullPointerException("Fitting not defined.");
+		}else {			
+			float res = 0;			
+			for(int deg = 0; deg < polyCoff.length; deg++) {				
+				res += polyCoff[deg] * Math.pow(day, deg);				
+			}							
+			return res;			
+		}							
+	}
+	
+	public void generatePolyFit(int deg) {
+		for(int i = 0; i < interpol.length; i++) {
+			if(interpol[i] != null) {
+				final WeightedObservedPoints obs = new WeightedObservedPoints();
+				for(int j = 0; j < interpol[i].length; j++) {
+					obs.add(interpol_study_day[j], interpol[i][j]);
+				}
+				final PolynomialCurveFitter fitter = PolynomialCurveFitter.create(deg);
+				polyFit[i] = fitter.fit(obs.toList());							   
+			}
+			
+		}
+		
+	}
+	
 	
 	private float interpolation_linear_by_pos(float[] src_val, int day, int pos) {
 		if (src_val == null) {

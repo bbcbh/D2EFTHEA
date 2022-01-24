@@ -69,8 +69,8 @@ public class RunSimulations {
 		// Debug
 		
 		System.out.println("Study arm offset = " + Arrays.toString(mapping_study_arm_offset));
-		for(int i = 0; i < qaly_mapping.length; i++) {
-			System.out.println(String.format("%4d: %s", i, Arrays.toString(qaly_mapping[i])));
+		for(int rowNum = 0; rowNum < qaly_mapping.length; rowNum++) {
+			System.out.println(String.format("%4d: %s", rowNum, Arrays.toString(qaly_mapping[rowNum])));
 		}		
 		
 		Runnable_SingleQALYComparsion cmp = new Runnable_SingleQALYComparsion(22519121217l, 
