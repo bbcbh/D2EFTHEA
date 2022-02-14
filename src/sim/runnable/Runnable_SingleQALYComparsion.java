@@ -32,9 +32,9 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 	public Runnable_SingleQALYComparsion(final long seed, final float[][] qaly_mapping,
 			final int[] mapping_study_arm_offset, final float[] day_0_qalys, float delta_qaly) {		
 		this.seed = seed;
-		this.qaly_mapping = qaly_mapping;
-		this.mapping_study_arm_offset = mapping_study_arm_offset;
-		this.day_0_qalys = day_0_qalys;
+		this.qaly_mapping = Arrays.copyOf(qaly_mapping, qaly_mapping.length);
+		this.mapping_study_arm_offset = Arrays.copyOf(mapping_study_arm_offset, mapping_study_arm_offset.length);
+		this.day_0_qalys = Arrays.copyOf(day_0_qalys,day_0_qalys.length);
 		this.delta_qaly = delta_qaly;
 		result = new HashMap<String, Object>();
 	}
@@ -47,6 +47,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 	@Override
 	public void run() {
 
+		
 		RandomGenerator rng = new MersenneTwister(seed);
 		result.put(KEY_SEED, seed);
 
@@ -69,6 +70,8 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 			
 			int[] visit_to_sample = new int[] { 1, 2 }; // 1 = Wk_00, 2 = Wk_48
+			
+		
 			
 			QALY_MAPPING_COMPARATOR cmp = new QALY_MAPPING_COMPARATOR(visit_to_sample[0]);
 
@@ -140,8 +143,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 			cmpPerson[s].generatePolyFit(2);
 		}
 		
-		result.put(KEY_HEA_PERSON, cmpPerson);			
-		
+		result.put(KEY_HEA_PERSON, cmpPerson);				
 		
 	}
 
