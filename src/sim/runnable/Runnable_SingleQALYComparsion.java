@@ -110,9 +110,10 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 					Arrays.sort(sampleResult);
 					int toInclude = sampleResult.length;
-					while (Double.isNaN(sampleResult[toInclude - 1])) {
+					while (Double.isNaN(sampleResult[toInclude - 1]) && toInclude > 1) {
 						toInclude--;
-					}
+					}				
+					
 					sampleResult = Arrays.copyOf(sampleResult, toInclude);
 				} else {
 					sampleResult = new double[] { vaild_qaly_mapping[posToInclude[0]][visitResPt + 1] };
@@ -140,10 +141,12 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 			cmpPerson[s].setInterpol_study_day(new int[] { 0, 48 * 7, 96 * 7 });
 			cmpPerson[s].setInterpol_QALY(interpol_QALY);
-			cmpPerson[s].generatePolyFit(2);
+			//cmpPerson[s].generatePolyFit(2);
 		}
 		
-		result.put(KEY_HEA_PERSON, cmpPerson);				
+		result.put(KEY_HEA_PERSON, cmpPerson);		
+		
+		//System.out.println(String.format("Sampling under seed #%d completed.", seed));
 		
 	}
 

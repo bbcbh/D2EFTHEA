@@ -57,6 +57,16 @@ public class D2EFT_HEA_Person{
 		return Arrays.binarySearch(interpol_study_day, day);	
 	}
 	
+	
+	
+	public float getQALYByPos(int day) {
+		return interpolation_linear_by_pos(interpol[INDEX_QALY],day, getDayPos(day));		
+	}
+	
+	public float getCD4ByPos(int day) {
+		return interpolation_linear_by_pos(interpol[INDEX_CD4],day,getDayPos(day));		
+	}		
+	
 	public float getQALYByPos(int day, int pos) {
 		return interpolation_linear_by_pos(interpol[INDEX_QALY],day,pos);		
 	}
@@ -117,8 +127,11 @@ public class D2EFT_HEA_Person{
 				return src_val[pos - 1] + (src_val[pos] - src_val[pos - 1]) * (day - interpol_study_day[pos - 1])
 						/ (interpol_study_day[pos] - interpol_study_day[pos - 1]);
 			} else {
-				throw new IllegalArgumentException(String.format("Day %s is outside interpolation range of [%d,%d]",
-						day, interpol_study_day[0], interpol_study_day[interpol_study_day.length - 1]));
+				// Using ending point
+				return 	src_val[src_val.length-1];						
+				
+				//throw new IllegalArgumentException(String.format("Day %s is outside interpolation range of [%d,%d]",
+				//		day, interpol_study_day[0], interpol_study_day[interpol_study_day.length - 1]));
 			}
 		}
 
