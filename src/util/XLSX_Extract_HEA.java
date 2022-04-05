@@ -45,26 +45,27 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	public static final int HEALTHUTIL_RESP_ID = 0;
 
 	public static final int HEALTHUTIL_RESP_SITE = HEALTHUTIL_RESP_ID + 1;
-	public static final int HEALTHUTIL_RESP_ARM = HEALTHUTIL_RESP_SITE + 1;
-	public static final int HEALTHUTIL_RESP_VISIT = HEALTHUTIL_RESP_ARM + 1;
-
-	public static final int HEALTHUTIL_RESP_ER_VISIT = HEALTHUTIL_RESP_VISIT + 1; // 1 # ER visits
-	public static final int HEALTHUTIL_RESP_HOSPITAL_ADIM = HEALTHUTIL_RESP_ER_VISIT + 1; // 2b # hospital admissions
-	public static final int HEALTHUTIL_RESP_NIGHTS_IN_HOSPITAL = HEALTHUTIL_RESP_HOSPITAL_ADIM + 1; // 2c # nights in
-																									// Hospital
-	public static final int HEALTHUTIL_RESP_NIGHTS_IN_NURSING = HEALTHUTIL_RESP_NIGHTS_IN_HOSPITAL + 1; // 3 # nights in
-																										// nursing home
-	public static final int HEALTHUTIL_RESP_OUTPATIENT = HEALTHUTIL_RESP_NIGHTS_IN_NURSING + 1; // 4 # visits outpatient
-	public static final int HEALTHUTIL_RESP_VISIT_SOCIAL_WORKER = HEALTHUTIL_RESP_OUTPATIENT + 1; // 5 # visits social
-																									// worker
-	public static final int HEALTHUTIL_RESP_VISIT_HOME_CARE_NURSE = HEALTHUTIL_RESP_VISIT_SOCIAL_WORKER + 1; // 6 #
-																												// visits
-																												// home
-																												// care
-	public static final int HEALTHUTIL_RESP_CARE_BY_FAMILY = HEALTHUTIL_RESP_VISIT_HOME_CARE_NURSE + 1; // 7 # days
-																										// family member
-																										// care
-	public static final int HEALTHUTIL_RESP_DAY_MISSED = HEALTHUTIL_RESP_CARE_BY_FAMILY + 1; // 8 # days missed
+	public static final int HEALTHUTIL_RESP_VISIT = HEALTHUTIL_RESP_SITE + 1;
+	public static final int HEALTHUTIL_RESP_ARM =  HEALTHUTIL_RESP_VISIT+ 1;	
+	// 1 # ER visits
+	public static final int HEALTHUTIL_RESP_ER_VISIT = HEALTHUTIL_RESP_ARM + 1;  
+	// 2b # hospital admissions
+	public static final int HEALTHUTIL_RESP_HOSPITAL_ADIM = HEALTHUTIL_RESP_ER_VISIT + 1; 
+	// 2c # nights in Hospital
+	public static final int HEALTHUTIL_RESP_NIGHTS_IN_HOSPITAL = HEALTHUTIL_RESP_HOSPITAL_ADIM + 1;
+	// 3 # nights in nursing home
+	public static final int HEALTHUTIL_RESP_NIGHTS_IN_NURSING = HEALTHUTIL_RESP_NIGHTS_IN_HOSPITAL + 1; 
+	// 4 # visits outpatient
+	public static final int HEALTHUTIL_RESP_OUTPATIENT = HEALTHUTIL_RESP_NIGHTS_IN_NURSING + 1; 
+	// 5 # visits social worker
+	public static final int HEALTHUTIL_RESP_VISIT_SOCIAL_WORKER = HEALTHUTIL_RESP_OUTPATIENT + 1; 
+	// 6 # visits home care
+	public static final int HEALTHUTIL_RESP_VISIT_HOME_CARE_NURSE = HEALTHUTIL_RESP_VISIT_SOCIAL_WORKER + 1; 
+	// 7 # days family member care
+	public static final int HEALTHUTIL_RESP_CARE_BY_FAMILY = HEALTHUTIL_RESP_VISIT_HOME_CARE_NURSE + 1;
+	// 8 # days missed
+	public static final int HEALTHUTIL_RESP_DAY_MISSED = HEALTHUTIL_RESP_CARE_BY_FAMILY + 1;
+	
 	public static final int HEALTHUTIL_RESP_LENGTH = HEALTHUTIL_RESP_DAY_MISSED + 1;
 
 	public static final int SF_6D_MAP_STUDY_ARM = 0;
@@ -78,8 +79,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	protected transient Collection<int[]>[][] sf12_resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
 	protected transient HashMap<Integer, int[]> sf12_resp_index_by_pid = new HashMap<>();
 
-	protected transient Collection<int[]>[][] health_util_resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
-	protected transient HashMap<Integer, int[]> health_util_resp_index_by_pid = new HashMap<>();
+	//protected transient Collection<int[]>[][] health_util_resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
+	protected transient HashMap<Integer, int[][]> health_util_resp_index_by_pid = new HashMap<>();
 
 	public void loadWorkbook(File inpath) {
 		extractWorkbook(inpath);
@@ -162,8 +163,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 									? Double.toString(cell.getNumericCellValue())
 									: cell.getStringCellValue();
 
-							printOutput(String.format("Error in formatting cell at (%d, %s): [%s]\n", rowNum + 1,
-									getColumnName(colNum + 1), output));
+							printOutput(String.format("Error in formatting cell at (%d, %s) in %s : [%s]\n", rowNum + 1,
+									getColumnName(colNum + 1), srcSheet_sf_12.getSheetName(), output));
 
 						}
 						colNum++;
@@ -172,8 +173,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 				}
 				rowNum++;
 			}
-			printOutput(String.format("Extraction completed. Time required = %.3f s\n",
-					(System.currentTimeMillis() - tic) / 1000f));
+			printOutput(String.format("Extraction of %s completed. Time required = %.3f s\n",
+					srcSheet_sf_12.getSheetName(), (System.currentTimeMillis() - tic) / 1000f));
 
 			// Mapping for quicker lookup
 			Collection<int[]> sf12_resp;
@@ -211,10 +212,12 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 			dateCompleted_healthUtil = new Date[numRows];
 			int val;
 
+			
 			for (Row row : srcSheet_HealthUtil) {
-
 				if (rowNum > 0) { // Skip the first row
 					int colNum = 0;
+					
+					Loop_ReadingRow:
 					for (Cell cell : row) {
 						try {
 							switch (colNum) {
@@ -235,7 +238,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 								} else {
 									resp_healthUtil[rPt][HEALTHUTIL_RESP_VISIT] = val;
 								}
-								// 4: RANDARM
+								break;
+							// 4: RANDARM
 							case 4:
 								val = matchString(cell.getStringCellValue(), STUDY_ARM);
 								if (val < 0) {
@@ -301,14 +305,18 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 								// Do nothing
 							}
 
-						} catch (IllegalStateException ex) {
+						} catch (IllegalStateException | NumberFormatException ex) {
 							String output = cell.getCellType() == CellType.NUMERIC
 									? Double.toString(cell.getNumericCellValue())
-									: cell.getStringCellValue();
+									: cell.toString();
 
-							printOutput(String.format("Error in formatting cell at (%d, %s): [%s]\n", rowNum + 1,
-									getColumnName(colNum + 1), output));
-
+							printOutput(String.format("Error in formatting cell at (%d, %s) in %s : [%s]\n", rowNum + 1,
+									getColumnName(colNum + 1), srcSheet_HealthUtil.getSheetName(), output));
+							
+							
+							// Skip the entire row
+							Arrays.fill(resp_healthUtil[rPt], -1);
+							break Loop_ReadingRow;
 						}
 						colNum++;
 					}
@@ -323,21 +331,23 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 			for (int r = 0; r < resp_healthUtil.length; r++) {
 				int[] resp = resp_healthUtil[r];
 				if (resp[HEALTHUTIL_RESP_ARM] != -1 && resp[HEALTHUTIL_RESP_VISIT] != -1) {
-					healthutil_resp = health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]];
-					if (healthutil_resp == null) {
-						health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]] = new ArrayList<>();
-						healthutil_resp = health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]];
-					}
-					healthutil_resp.add(Arrays.copyOfRange(resp, HEALTHUTIL_RESP_ER_VISIT, resp.length));
-
+					//healthutil_resp = health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]];
+					//if (healthutil_resp == null) {
+					//	health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]] = new ArrayList<>();
+					//	healthutil_resp = health_util_resp_map[resp[HEALTHUTIL_RESP_ARM]][resp[HEALTHUTIL_RESP_VISIT]];
+					//}
+					//healthutil_resp.add(Arrays.copyOfRange(resp, HEALTHUTIL_RESP_ER_VISIT, resp.length));
+					
 					Integer pid = resp[HEALTHUTIL_RESP_ID];
-					int[] index = health_util_resp_index_by_pid.get(pid);
-					if (index == null) {
-						index = new int[VISIT_NUM.length];
-						Arrays.fill(index, -1);
-						health_util_resp_index_by_pid.put(pid, index);
+					
+					int[][] healthutil_resp_arr =  health_util_resp_index_by_pid.get(pid);
+					
+					if(healthutil_resp_arr == null) {
+						healthutil_resp_arr = new int[VISIT_NUM.length][];
+						health_util_resp_index_by_pid.put(pid, healthutil_resp_arr);						
 					}
-					index[resp[HEALTHUTIL_RESP_VISIT]] = r;
+					healthutil_resp_arr[resp[HEALTHUTIL_RESP_VISIT]]= Arrays.copyOfRange(resp, HEALTHUTIL_RESP_ER_VISIT, resp.length);
+				
 				}
 			}
 
@@ -370,10 +380,7 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	public Collection<int[]> sf12_response_lookup(int study_arm, int visit) {
 		return sf12_resp_map[study_arm][visit];
 	}
-	
-	public Collection<int[]> healthutil_resp_lookup(int study_arm, int visit){
-		return health_util_resp_map[study_arm][visit];
-	}
+
 
 	public int[] response_lookup_by_row(int row) {
 		return resp_sf12[row];
@@ -381,6 +388,10 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 
 	public HashMap<Integer, int[]> getSF_12_Resp_index_by_pid() {
 		return sf12_resp_index_by_pid;
+	}		
+
+	public HashMap<Integer, int[][]> getHealth_util_resp_index_by_pid() {
+		return health_util_resp_index_by_pid;
 	}
 
 	public static void main(String[] args) throws IOException {

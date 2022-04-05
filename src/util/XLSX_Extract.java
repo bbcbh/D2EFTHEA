@@ -54,7 +54,7 @@ public class XLSX_Extract {
 	    }
 	
 	    if (srcWorkbook != null) {
-	    	printOutput("Worksheet list: ");
+	    	printOutput("Worksheet list:\n");
 	        sheets = new XSSFSheet[srcWorkbook.getNumberOfSheets()];
 	        for (int i = 0; i < sheets.length; i++) {
 	            sheets[i] = srcWorkbook.getSheetAt(i);

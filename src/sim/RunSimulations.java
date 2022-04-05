@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
@@ -29,11 +30,14 @@ public class RunSimulations {
 	private float[][] qaly_mapping; // []{study_arm, wk_0, wk_48, wk_96}
 	private int[] mapping_study_arm_offset = new int[XLSX_Extract_HEA.STUDY_ARM.length];
 	private float[] day_0_qalys;
-	private HashMap<Integer, float[]> sf_6d_mapping;
 
 	// Health utilisation
-	@SuppressWarnings("unchecked")
-	private HashMap<Float, ArrayList<Integer>>[][] healthUtil_mapping = new HashMap[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length]; // [study_arm][visit_num]{QALY->{pids}}
+	private Float[][][] healthUtil_QALY_LIST = new Float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][];
+	private float[][][][] healthUtil_USAGE_LIST = new float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
+
+	// Lookup by PID
+	private HashMap<Integer, float[]> sf_6d_mapping_by_pid;  // PID -> {study_arm, qaly_wk_0, qaly_wk_48, qaly_wk_96}
+	HashMap<Integer, int[][]> health_util_resp_index_by_pid; // PID -> [VISIT_NUM]{HEALTHUTIL_RESP_ER_VISIT, HEALTHUTIL_RESP_HOSPITAL_ADIM ... }
 
 	public void loadWorkbook(File workbookFile) {
 
@@ -41,41 +45,79 @@ public class RunSimulations {
 
 		wk_extract = new XLSX_Extract_HEA();
 		wk_extract.loadWorkbook(workbookFile);
+		sf_6d_mapping_by_pid = wk_extract.generate_SF6D_Mapping();
+		health_util_resp_index_by_pid = wk_extract.getHealth_util_resp_index_by_pid();
 
-		sf_6d_mapping = wk_extract.generate_SF6D_Mapping();
-		qaly_mapping = new float[sf_6d_mapping.size()][XLSX_Extract_HEA.SF_6D_MAP_LENGTH];
-		day_0_qalys = new float[sf_6d_mapping.size()];
+		qaly_mapping = new float[sf_6d_mapping_by_pid.size()][XLSX_Extract_HEA.SF_6D_MAP_LENGTH];
+		day_0_qalys = new float[sf_6d_mapping_by_pid.size()];
 
 		int pt_total = 0;
 		int[] pt_diff = new int[XLSX_Extract_HEA.STUDY_ARM.length];
+		
+		//Health Util
+		@SuppressWarnings("unchecked")
+		HashMap<Float, ArrayList<Integer>>[][] healthUtil_QALY_PID_Map = 
+				new HashMap[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length]; // [study_arm][visit_num]{QALY->{pids}}
+		
 
-		for (Integer pid : sf_6d_mapping.keySet()) {
-			qaly_mapping[pt_total] = sf_6d_mapping.get(pid);
+		for (Integer pid : sf_6d_mapping_by_pid.keySet()) {
+			qaly_mapping[pt_total] = sf_6d_mapping_by_pid.get(pid);
 			day_0_qalys[pt_total] = qaly_mapping[pt_total][XLSX_Extract_HEA.SF_6D_MAP_WK_00];
 			pt_diff[(int) qaly_mapping[pt_total][XLSX_Extract_HEA.SF_6D_MAP_STUDY_ARM]]++;
 
 			int studyArm = (int) qaly_mapping[pt_total][XLSX_Extract_HEA.SF_6D_MAP_STUDY_ARM];
 
 			for (int v = XLSX_Extract_HEA.SF_6D_MAP_WK_00; v <= XLSX_Extract_HEA.SF_6D_MAP_WK_96; v++) {
-				HashMap<Float, ArrayList<Integer>> study_visit_map = healthUtil_mapping[studyArm][v
+				HashMap<Float, ArrayList<Integer>> study_visit_map = healthUtil_QALY_PID_Map[studyArm][v
 						- XLSX_Extract_HEA.SF_6D_MAP_WK_00];
 				if (study_visit_map == null) {
 					study_visit_map = new HashMap<>();
-					healthUtil_mapping[studyArm][v - XLSX_Extract_HEA.SF_6D_MAP_WK_00] = study_visit_map;
+					healthUtil_QALY_PID_Map[studyArm][v - XLSX_Extract_HEA.SF_6D_MAP_WK_00] = study_visit_map;
 				}
 				ArrayList<Integer> qaly_ent = study_visit_map.get(qaly_mapping[pt_total][v]);
-				if(qaly_ent == null) {
+				if (qaly_ent == null) {
 					qaly_ent = new ArrayList<>();
 					study_visit_map.put(qaly_mapping[pt_total][v], qaly_ent);
 				}
-				qaly_ent.add(pid);					
+				qaly_ent.add(pid);
 			}
 
 			pt_total++;
 
 		}
-		
+
 		// TODO: Check healthUtil_mapping
+		for (int s = 0; s < XLSX_Extract_HEA.STUDY_ARM.length; s++) {
+			for (int v = 0; v < XLSX_Extract_HEA.VISIT_NUM.length; v++) {
+				HashMap<Float, ArrayList<Integer>> qaly_pid_map = healthUtil_QALY_PID_Map[v][s];
+				healthUtil_QALY_LIST[s][v] = qaly_pid_map.keySet().toArray(new Float[qaly_pid_map.size()]);
+				Arrays.sort(healthUtil_QALY_LIST[s][v]);
+				healthUtil_USAGE_LIST[s][v] = new float[healthUtil_QALY_LIST[s][v].length]
+						[XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH - XLSX_Extract_HEA.HEALTHUTIL_RESP_ER_VISIT];
+				
+				for(int q = 0; q < healthUtil_QALY_LIST[s][v].length; q++) {
+					Float qaly = healthUtil_QALY_LIST[s][v][q];
+					float[] healthUtil = healthUtil_USAGE_LIST[s][v][q];
+					int[] valid_Count = new int[healthUtil.length];
+					
+					ArrayList<Integer> pids = qaly_pid_map.get(qaly);
+					for(Integer pid: pids) {						
+						int[][] util_by_visit = health_util_resp_index_by_pid.get(pid);
+						if(util_by_visit != null && util_by_visit[v] != null) {
+							for(int u = 0; u < healthUtil.length; u++) {
+								healthUtil[u] += Math.max(0,  util_by_visit[v][u]);
+								valid_Count[u]++;
+							}							
+						}																	
+					}
+					for(int u = 0; u < healthUtil.length; u++) {
+						healthUtil[u] = healthUtil[u]/valid_Count[u];
+					}
+				}
+
+			}
+
+		}
 
 		Arrays.sort(day_0_qalys);
 
