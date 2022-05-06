@@ -31,14 +31,23 @@ public class RunSimulations {
 	private int[] mapping_study_arm_offset = new int[XLSX_Extract_HEA.STUDY_ARM.length];
 	private float[] day_0_qalys;
 
-	// Health utilisation
-	private Float[][][] healthUtil_QALY_LIST = new Float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][];
-	private float[][][][] healthUtil_USAGE_LIST = new float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
+	// Health utilisation	
+	// healthUtil_QALY_LIST[study_arm][visit_arm][qaly_index]
+	private float[][][] healthUtil_QALY_LIST = new float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][];
+	@SuppressWarnings("unchecked")
+	// healthUtil_USAGE_LIST[study_arm][visit_arm][qaly_index][response]
+	private ArrayList<Float>[][][][] healthUtil_USAGE_LIST = 
+			new ArrayList[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
 
 	// Lookup by PID
 	private HashMap<Integer, float[]> sf_6d_mapping_by_pid;  // PID -> {study_arm, qaly_wk_0, qaly_wk_48, qaly_wk_96}
 	HashMap<Integer, int[][]> health_util_resp_index_by_pid; // PID -> [VISIT_NUM]{HEALTHUTIL_RESP_ER_VISIT, HEALTHUTIL_RESP_HOSPITAL_ADIM ... }
+	
+	
+	// Other parameters
+	public static final int NUM_HEALTHUTIL_RESP = XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH - XLSX_Extract_HEA.HEALTHUTIL_RESP_ER_VISIT;
 
+	@SuppressWarnings("unchecked")
 	public void loadWorkbook(File workbookFile) {
 
 		// SF_12
@@ -54,8 +63,7 @@ public class RunSimulations {
 		int pt_total = 0;
 		int[] pt_diff = new int[XLSX_Extract_HEA.STUDY_ARM.length];
 		
-		//Health Util
-		@SuppressWarnings("unchecked")
+		//Health Util		
 		HashMap<Float, ArrayList<Integer>>[][] healthUtil_QALY_PID_Map = 
 				new HashMap[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length]; // [study_arm][visit_num]{QALY->{pids}}
 		
@@ -86,37 +94,40 @@ public class RunSimulations {
 
 		}
 
-		// TODO: Check healthUtil_mapping
+		
 		for (int s = 0; s < XLSX_Extract_HEA.STUDY_ARM.length; s++) {
 			for (int v = 0; v < XLSX_Extract_HEA.VISIT_NUM.length; v++) {
-				HashMap<Float, ArrayList<Integer>> qaly_pid_map = healthUtil_QALY_PID_Map[v][s];
-				healthUtil_QALY_LIST[s][v] = qaly_pid_map.keySet().toArray(new Float[qaly_pid_map.size()]);
+				HashMap<Float, ArrayList<Integer>> qaly_pid_map = healthUtil_QALY_PID_Map[v][s];				
+				healthUtil_QALY_LIST[s][v] =  new float[qaly_pid_map.size()];
+				int c = 0;
+				for(Float f : qaly_pid_map.keySet()) {
+					healthUtil_QALY_LIST[s][v][c] = f;
+					c++;
+				}				
 				Arrays.sort(healthUtil_QALY_LIST[s][v]);
-				healthUtil_USAGE_LIST[s][v] = new float[healthUtil_QALY_LIST[s][v].length]
-						[XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH - XLSX_Extract_HEA.HEALTHUTIL_RESP_ER_VISIT];
+				healthUtil_USAGE_LIST[s][v] = new ArrayList[healthUtil_QALY_LIST[s][v].length][RunSimulations.NUM_HEALTHUTIL_RESP];
 				
 				for(int q = 0; q < healthUtil_QALY_LIST[s][v].length; q++) {
 					Float qaly = healthUtil_QALY_LIST[s][v][q];
-					float[] healthUtil = healthUtil_USAGE_LIST[s][v][q];
-					int[] valid_Count = new int[healthUtil.length];
+					ArrayList<Float>[] healthUtil = healthUtil_USAGE_LIST[s][v][q];
+					if(healthUtil == null) {
+						healthUtil = new ArrayList[RunSimulations.NUM_HEALTHUTIL_RESP];												
+						healthUtil_USAGE_LIST[s][v][q] = healthUtil;
+					}
+									
 					
 					ArrayList<Integer> pids = qaly_pid_map.get(qaly);
 					for(Integer pid: pids) {						
 						int[][] util_by_visit = health_util_resp_index_by_pid.get(pid);
 						if(util_by_visit != null && util_by_visit[v] != null) {
 							for(int u = 0; u < healthUtil.length; u++) {
-								healthUtil[u] += Math.max(0,  util_by_visit[v][u]);
-								valid_Count[u]++;
+								healthUtil[u].add(Math.max(0,  (float) util_by_visit[v][u]));								
 							}							
 						}																	
 					}
-					for(int u = 0; u < healthUtil.length; u++) {
-						healthUtil[u] = healthUtil[u]/valid_Count[u];
-					}
+					
 				}
-
 			}
-
 		}
 
 		Arrays.sort(day_0_qalys);
@@ -178,6 +189,8 @@ public class RunSimulations {
 		for (int r = 0; r < runnable.length; r++) {
 			runnable[r] = new Runnable_SingleQALYComparsion(rng.nextLong(), qaly_mapping, mapping_study_arm_offset,
 					day_0_qalys);
+			
+			runnable[r].setHealthUtilisationLookup(healthUtil_QALY_LIST, healthUtil_USAGE_LIST);
 
 			if (useThread) {
 				if (exec == null) {

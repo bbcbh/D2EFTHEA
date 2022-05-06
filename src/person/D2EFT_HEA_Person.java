@@ -5,10 +5,14 @@ import java.util.Arrays;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
+import sim.RunSimulations;
+
 public class D2EFT_HEA_Person{
 	private long id;
 	private int study_arm;
 	private int[] interpol_study_day;			
+	
+	
 
 	public static final int STUDY_ARM_SOC = 0;
 	public static final int STUDY_ARM_DOL = STUDY_ARM_SOC + 1;
@@ -16,7 +20,8 @@ public class D2EFT_HEA_Person{
 	
 	public static final int INDEX_QALY = 0;
 	public static final int INDEX_CD4 = INDEX_QALY + 1;
-	public static final int INDEX_LENGTH = INDEX_CD4 + 1;
+	public static final int INDEX_HEALTH_UTIL_RESP_START = INDEX_CD4 +1;
+	public static final int INDEX_LENGTH = INDEX_HEALTH_UTIL_RESP_START + RunSimulations.NUM_HEALTHUTIL_RESP;
 	
 	private float[][] interpol = new float[INDEX_LENGTH][]; 
 	private double[][] polyFit = new double[INDEX_LENGTH][];
@@ -40,6 +45,12 @@ public class D2EFT_HEA_Person{
 
 	public void setInterpol_CD4_count(float[] interpol_CD4_count) {
 		interpol[INDEX_CD4] = interpol_CD4_count;
+	}
+	
+	public void setInterpol_HealthUtilisation(float[][] healthUtilisation) {
+		for(int u = 0 ; u < RunSimulations.NUM_HEALTHUTIL_RESP; u++) {			
+			interpol[INDEX_HEALTH_UTIL_RESP_START + u] = healthUtilisation[u];						
+		}
 	}
 
 	public long getId() {

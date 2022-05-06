@@ -67,7 +67,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	public static final int HEALTHUTIL_RESP_DAY_MISSED = HEALTHUTIL_RESP_CARE_BY_FAMILY + 1;
 	
 	public static final int HEALTHUTIL_RESP_LENGTH = HEALTHUTIL_RESP_DAY_MISSED + 1;
-
+	
+	
 	public static final int SF_6D_MAP_STUDY_ARM = 0;
 	public static final int SF_6D_MAP_WK_00 = SF_6D_MAP_STUDY_ARM + 1;
 	public static final int SF_6D_MAP_WK_48 = SF_6D_MAP_WK_00 + 1;

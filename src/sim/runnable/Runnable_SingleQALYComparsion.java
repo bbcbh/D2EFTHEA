@@ -1,5 +1,6 @@
 package sim.runnable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,6 +10,8 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import person.D2EFT_HEA_Person;
+import sim.RunSimulations;
+import util.XLSX_Extract_HEA;
 
 public class Runnable_SingleQALYComparsion implements Runnable {
 
@@ -18,12 +21,18 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 	public static final float DEFAULT_DELTA_QALY_RANGE = 0.05f;
 	
 
+	// QALY Reference
 	private final float delta_qaly; 
 	private final long seed;
 	private final float[] day_0_qalys;
 	private final float[][] qaly_mapping; // []{study_arm, wk_0, wk_48, wk_96}
 	private final int[] mapping_study_arm_offset;
 	
+	// Health utilisation reference
+	private float[][][] healthUtil_REF_QALY = new float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][];
+	@SuppressWarnings("unchecked")
+	private ArrayList<Float>[][][][]  healthUtil_REF_USAGE = 
+			new ArrayList[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
 
 	private HashMap<String, Object> result;
 
@@ -36,13 +45,22 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 		this.mapping_study_arm_offset = Arrays.copyOf(mapping_study_arm_offset, mapping_study_arm_offset.length);
 		this.day_0_qalys = Arrays.copyOf(day_0_qalys,day_0_qalys.length);
 		this.delta_qaly = delta_qaly;
-		result = new HashMap<String, Object>();
-	}
+		result = new HashMap<String, Object>();		
+	}	
+	
 	
 	public Runnable_SingleQALYComparsion(final long seed, final float[][] qaly_mapping,
 			final int[] mapping_study_arm_offset, final float[] day_0_qalys) {
 		this(seed, qaly_mapping, mapping_study_arm_offset, day_0_qalys, DEFAULT_DELTA_QALY_RANGE);
 	}
+	
+	public void setHealthUtilisationLookup( float[][][] healthUtil_REF_QALY, 
+			ArrayList<Float>[][][][] healthUtil_REF_USAGE ) {
+		this.healthUtil_REF_QALY = healthUtil_REF_QALY;
+		this.healthUtil_REF_USAGE = healthUtil_REF_USAGE;		
+	}
+	
+	
 
 	@Override
 	public void run() {
@@ -62,11 +80,51 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 			vaild_qaly_mapping = qaly_mapping;
 			cmpPerson[s] = new D2EFT_HEA_Person(seed, s);
 			float[] interpol_QALY = new float[] { day_0_qaly, Float.NaN, Float.NaN };
+			float[][] interpol_HealthUtil = new float[XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH][interpol_QALY.length];
+			
 
 			int sampleRangeStartPt = mapping_study_arm_offset[s]; // Inclusive
 			int sampleRangeEndPt = (s + 1) < mapping_study_arm_offset.length ? mapping_study_arm_offset[s + 1]
 					: vaild_qaly_mapping.length; // Non-Inclusive
 			float sampleVal = day_0_qaly;
+			
+			
+			
+			int visit = 0;
+			int study_arm = s;		
+			
+			
+			//TODO: Sample health care utilisation 
+			ArrayList<Float>[][] healthUtilUsage = healthUtil_REF_USAGE[study_arm][visit];
+			float[] healthUtil_qalys = healthUtil_REF_QALY[study_arm][visit];
+			int startIndex = Arrays.binarySearch(healthUtil_qalys, sampleVal-DEFAULT_DELTA_QALY_RANGE);
+			if(startIndex<0) {
+				startIndex = ~startIndex;
+			}
+			
+			startIndex = Math.max(0, startIndex);
+			
+			int endIndex = Arrays.binarySearch(healthUtil_qalys, sampleVal+DEFAULT_DELTA_QALY_RANGE);
+			if(endIndex<0) {
+				endIndex = ~endIndex;
+			}
+			
+			endIndex = Math.min(endIndex, healthUtil_qalys.length);
+			for (int resp = 0; resp < RunSimulations.NUM_HEALTHUTIL_RESP; resp++) {
+				ArrayList<Float> sampVal = new ArrayList<>();
+				for (int i = startIndex; i < endIndex; i++) {
+					sampVal.addAll(healthUtilUsage[i][resp]);
+				}				
+				
+				Float[] responseVal = sampVal.toArray(new Float[sampVal.size()]);				
+				
+				Arrays.sort(responseVal);
+				// TODO: To complete
+				
+			}
+			
+			
+			
 
 			
 			int[] visit_to_sample = new int[] { 1, 2 }; // 1 = Wk_00, 2 = Wk_48
@@ -141,6 +199,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 			cmpPerson[s].setInterpol_study_day(new int[] { 0, 48 * 7, 96 * 7 });
 			cmpPerson[s].setInterpol_QALY(interpol_QALY);
+			cmpPerson[s].setInterpol_HealthUtilisation(interpol_HealthUtil);
 			//cmpPerson[s].generatePolyFit(2);
 		}
 		
