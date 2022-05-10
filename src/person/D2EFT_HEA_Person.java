@@ -84,7 +84,19 @@ public class D2EFT_HEA_Person{
 	
 	public float getCD4ByPos(int day, int pos) {
 		return interpolation_linear_by_pos(interpol[INDEX_CD4],day,pos);		
-	}		
+	}	
+	
+	public float[] getHealthUtil(int day) {
+		return getHealthUtil(day, getDayPos(day));
+	}
+			
+	public float[] getHealthUtil(int day, int pos) {
+		float[] res = new float[RunSimulations.NUM_HEALTHUTIL_RESP];
+		for(int r = 0; r < res.length; r++) {
+			res[r] = interpolation_linear_by_pos(interpol[INDEX_HEALTH_UTIL_RESP_START + r], day, pos);
+		}
+		return res;
+	}
 	
 	
 	public double getQALYByFit(int day) {

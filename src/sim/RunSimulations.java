@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
@@ -109,19 +110,18 @@ public class RunSimulations {
 				
 				for(int q = 0; q < healthUtil_QALY_LIST[s][v].length; q++) {
 					Float qaly = healthUtil_QALY_LIST[s][v][q];
-					ArrayList<Float>[] healthUtil = healthUtil_USAGE_LIST[s][v][q];
-					if(healthUtil == null) {
-						healthUtil = new ArrayList[RunSimulations.NUM_HEALTHUTIL_RESP];												
-						healthUtil_USAGE_LIST[s][v][q] = healthUtil;
-					}
-									
+					ArrayList<Float>[] healthUtil = healthUtil_USAGE_LIST[s][v][q];							
 					
 					ArrayList<Integer> pids = qaly_pid_map.get(qaly);
 					for(Integer pid: pids) {						
 						int[][] util_by_visit = health_util_resp_index_by_pid.get(pid);
 						if(util_by_visit != null && util_by_visit[v] != null) {
 							for(int u = 0; u < healthUtil.length; u++) {
-								healthUtil[u].add(Math.max(0,  (float) util_by_visit[v][u]));								
+								float util_usage = Math.max(0,  (float) util_by_visit[v][u]);
+								if(healthUtil[u] == null) {
+									healthUtil[u] = new ArrayList<Float>();
+								}
+								healthUtil[u].add(util_usage);
 							}							
 						}																	
 					}
@@ -272,12 +272,17 @@ public class RunSimulations {
 				@Override
 				public float[][] call() {
 
-					float[][] res = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length];
+					float[][] res_qaly = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length];
+					// TODO: Check  Health utilisation interpolation 
+					float[][][] res_heathUtil = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length][RunSimulations.NUM_HEALTHUTIL_RESP];
 					for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
 						// res[t] = (float) Math.max(0,
 						// Math.min(cmpPerson[s].getQALYByFit(WEEKS_TO_SAMPLE[t]* 7), 1));
 						for (int a = 0; a < cmpPerson.length; a++) {
-							res[a][t] = cmpPerson[a].getQALYByPos(WEEKS_TO_SAMPLE[t] * 7);
+							int day = WEEKS_TO_SAMPLE[t] * 7;
+							int dayPos = cmpPerson[a].getDayPos(day);
+							res_qaly[a][t] = cmpPerson[a].getQALYByPos(day, dayPos);
+							res_heathUtil[a][t] = cmpPerson[a].getHealthUtil(day, dayPos);
 						}
 					}
 
@@ -309,7 +314,7 @@ public class RunSimulations {
 								fWri.print(WEEKS_TO_SAMPLE[t]);
 								for (int s = 0; s < cmpPerson.length; s++) {
 									fWri.print(',');
-									fWri.print(res[s][t]);
+									fWri.print(res_qaly[s][t]);
 								}
 								fWri.println();
 							}
@@ -319,7 +324,7 @@ public class RunSimulations {
 							e.printStackTrace();
 						}
 					}
-					return res;
+					return res_qaly;
 
 				}
 
