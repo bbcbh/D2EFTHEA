@@ -58,7 +58,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 	@Override
 	public void run() {
 
-		// TODO: To check health utilisation sampling
+		
 
 		RandomGenerator rng = new MersenneTwister(seed);
 		result.put(KEY_SEED, seed);
@@ -74,7 +74,7 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 			vaild_qaly_mapping = qaly_mapping;
 			cmpPerson[s] = new D2EFT_HEA_Person(seed, s);
 			float[] interpol_QALY = new float[] { day_0_qaly, Float.NaN, Float.NaN };
-			float[][] interpol_HealthUtil = new float[XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH][interpol_QALY.length];
+			float[][] interpol_HealthUtil = new float[RunSimulations.NUM_HEALTHUTIL_RESP][interpol_QALY.length];
 
 			int sampleRangeStartPt = mapping_study_arm_offset[s]; // Inclusive
 			int sampleRangeEndPt = (s + 1) < mapping_study_arm_offset.length ? mapping_study_arm_offset[s + 1]
@@ -174,6 +174,9 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 
 	
 	private float[] sampleHealthUtil(RandomGenerator rng, int study_arm, int visit, float qaly) {
+		
+		// TODO: To check health utilisation sampling
+		
 		ArrayList<Float>[][] healthUtilUsage = healthUtil_REF_USAGE[study_arm][visit];
 		float[] healthUtil_qalys = healthUtil_REF_QALY[study_arm][visit];
 		int startIndex = Arrays.binarySearch(healthUtil_qalys, qaly - DEFAULT_DELTA_QALY_RANGE);
@@ -195,23 +198,39 @@ public class Runnable_SingleQALYComparsion implements Runnable {
 		for (int resp = 0; resp < RunSimulations.NUM_HEALTHUTIL_RESP; resp++) {
 			ArrayList<Float> sampVal = new ArrayList<>();
 			for (int i = startIndex; i < endIndex; i++) {
-				if (healthUtilUsage[i][resp] != null) {
-					sampVal.addAll(healthUtilUsage[i][resp]);
+				if (healthUtilUsage[i][resp] != null) {											
+					sampVal.addAll(healthUtilUsage[i][resp]);			
+					
 				}
 			}
 
 			Float[] responseVal = sampVal.toArray(new Float[sampVal.size()]);
 
+		
+			
+			if(responseVal.length == 0) {
+				String msg = String.format(
+						"Warning: No health util data for Resp #%d QALY=%.2f at study arm #%d, visit #%d. "
+						+ "For now assume to be zero", 
+						resp, qaly, study_arm, visit);
+				responseVal = new Float[] {0f};
+				// TODO: Debug statement
+				//System.out.println(msg);
+				
+			}
+			
 			Arrays.sort(responseVal);
 
 			double[] rVal = new double[responseVal.length];
 			for (int i = 0; i < rVal.length; i++) {
-				rVal[i] = responseVal[i];
+				rVal[i] = responseVal[i];							
 			}
 
 			EmpiricalDistribution dist = new EmpiricalDistribution(rng);
 			dist.load(rVal);
 			healthUtil_by_visit_arm[resp] = (float) dist.sample();
+			
+			
 
 		}
 		return healthUtil_by_visit_arm;

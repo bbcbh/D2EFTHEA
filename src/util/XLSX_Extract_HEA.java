@@ -674,6 +674,7 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		ArrayList<Float>[] sf_6d_wk96_wk48 = new ArrayList[STUDY_ARM.length];
 
 		for (int i = 0; i < sf_6d_wk96_wk48.length; i++) {

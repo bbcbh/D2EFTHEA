@@ -6,16 +6,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.random.MersenneTwister;
@@ -32,21 +28,21 @@ public class RunSimulations {
 	private int[] mapping_study_arm_offset = new int[XLSX_Extract_HEA.STUDY_ARM.length];
 	private float[] day_0_qalys;
 
-	// Health utilisation	
+	// Health utilisation
 	// healthUtil_QALY_LIST[study_arm][visit_arm][qaly_index]
 	private float[][][] healthUtil_QALY_LIST = new float[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][];
 	@SuppressWarnings("unchecked")
 	// healthUtil_USAGE_LIST[study_arm][visit_arm][qaly_index][response]
-	private ArrayList<Float>[][][][] healthUtil_USAGE_LIST = 
-			new ArrayList[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
+	private ArrayList<Float>[][][][] healthUtil_USAGE_LIST = new ArrayList[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length][][];
 
 	// Lookup by PID
-	private HashMap<Integer, float[]> sf_6d_mapping_by_pid;  // PID -> {study_arm, qaly_wk_0, qaly_wk_48, qaly_wk_96}
-	HashMap<Integer, int[][]> health_util_resp_index_by_pid; // PID -> [VISIT_NUM]{HEALTHUTIL_RESP_ER_VISIT, HEALTHUTIL_RESP_HOSPITAL_ADIM ... }
-	
-	
+	private HashMap<Integer, float[]> sf_6d_mapping_by_pid; // PID -> {study_arm, qaly_wk_0, qaly_wk_48, qaly_wk_96}
+	HashMap<Integer, int[][]> health_util_resp_index_by_pid; // PID -> [VISIT_NUM]{HEALTHUTIL_RESP_ER_VISIT,
+																// HEALTHUTIL_RESP_HOSPITAL_ADIM ... }
+
 	// Other parameters
-	public static final int NUM_HEALTHUTIL_RESP = XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH - XLSX_Extract_HEA.HEALTHUTIL_RESP_ER_VISIT;
+	public static final int NUM_HEALTHUTIL_RESP = XLSX_Extract_HEA.HEALTHUTIL_RESP_LENGTH
+			- XLSX_Extract_HEA.HEALTHUTIL_RESP_ER_VISIT;
 
 	@SuppressWarnings("unchecked")
 	public void loadWorkbook(File workbookFile) {
@@ -63,11 +59,9 @@ public class RunSimulations {
 
 		int pt_total = 0;
 		int[] pt_diff = new int[XLSX_Extract_HEA.STUDY_ARM.length];
-		
-		//Health Util		
-		HashMap<Float, ArrayList<Integer>>[][] healthUtil_QALY_PID_Map = 
-				new HashMap[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length]; // [study_arm][visit_num]{QALY->{pids}}
-		
+
+		// Health Util
+		HashMap<Float, ArrayList<Integer>>[][] healthUtil_QALY_PID_Map = new HashMap[XLSX_Extract_HEA.STUDY_ARM.length][XLSX_Extract_HEA.VISIT_NUM.length]; // [study_arm][visit_num]{QALY->{pids}}
 
 		for (Integer pid : sf_6d_mapping_by_pid.keySet()) {
 			qaly_mapping[pt_total] = sf_6d_mapping_by_pid.get(pid);
@@ -95,37 +89,36 @@ public class RunSimulations {
 
 		}
 
-		
 		for (int s = 0; s < XLSX_Extract_HEA.STUDY_ARM.length; s++) {
 			for (int v = 0; v < XLSX_Extract_HEA.VISIT_NUM.length; v++) {
-				HashMap<Float, ArrayList<Integer>> qaly_pid_map = healthUtil_QALY_PID_Map[v][s];				
-				healthUtil_QALY_LIST[s][v] =  new float[qaly_pid_map.size()];
+				HashMap<Float, ArrayList<Integer>> qaly_pid_map = healthUtil_QALY_PID_Map[v][s];
+				healthUtil_QALY_LIST[s][v] = new float[qaly_pid_map.size()];
 				int c = 0;
-				for(Float f : qaly_pid_map.keySet()) {
+				for (Float f : qaly_pid_map.keySet()) {
 					healthUtil_QALY_LIST[s][v][c] = f;
 					c++;
-				}				
+				}
 				Arrays.sort(healthUtil_QALY_LIST[s][v]);
 				healthUtil_USAGE_LIST[s][v] = new ArrayList[healthUtil_QALY_LIST[s][v].length][RunSimulations.NUM_HEALTHUTIL_RESP];
-				
-				for(int q = 0; q < healthUtil_QALY_LIST[s][v].length; q++) {
+
+				for (int q = 0; q < healthUtil_QALY_LIST[s][v].length; q++) {
 					Float qaly = healthUtil_QALY_LIST[s][v][q];
-					ArrayList<Float>[] healthUtil = healthUtil_USAGE_LIST[s][v][q];							
-					
+					ArrayList<Float>[] healthUtil = healthUtil_USAGE_LIST[s][v][q];
+
 					ArrayList<Integer> pids = qaly_pid_map.get(qaly);
-					for(Integer pid: pids) {						
+					for (Integer pid : pids) {
 						int[][] util_by_visit = health_util_resp_index_by_pid.get(pid);
-						if(util_by_visit != null && util_by_visit[v] != null) {
-							for(int u = 0; u < healthUtil.length; u++) {
-								float util_usage = Math.max(0,  (float) util_by_visit[v][u]);
-								if(healthUtil[u] == null) {
+						if (util_by_visit != null && util_by_visit[v] != null) {
+							for (int u = 0; u < healthUtil.length; u++) {
+								float util_usage = Math.max(0, (float) util_by_visit[v][u]);
+								if (healthUtil[u] == null) {
 									healthUtil[u] = new ArrayList<Float>();
 								}
 								healthUtil[u].add(util_usage);
-							}							
-						}																	
+							}
+						}
 					}
-					
+
 				}
 			}
 		}
@@ -189,7 +182,7 @@ public class RunSimulations {
 		for (int r = 0; r < runnable.length; r++) {
 			runnable[r] = new Runnable_SingleQALYComparsion(rng.nextLong(), qaly_mapping, mapping_study_arm_offset,
 					day_0_qalys);
-			
+
 			runnable[r].setHealthUtilisationLookup(healthUtil_QALY_LIST, healthUtil_USAGE_LIST);
 
 			if (useThread) {
@@ -257,23 +250,23 @@ public class RunSimulations {
 		final int[] WEEKS_DATA = { 0, 48, 96 };
 		final boolean genIndivCSV = runnable.length <= 8;
 
-		float[][][] resultSet = new float[runnable.length][][];
-		ArrayList<Future<float[][]>> futureRes = new ArrayList<>();
+		Object[][] resultSet_All = new Object[runnable.length][];
+		// float[][][] resultSet = new float[runnable.length][][];
+		ArrayList<Future<Object[]>> futureRes = new ArrayList<>();
 
 		for (int r = 0; r < runnable.length; r++) {
 
 			final D2EFT_HEA_Person[] cmpPerson = (D2EFT_HEA_Person[]) runnable[r].getResult()
 					.get(Runnable_SingleQALYComparsion.KEY_HEA_PERSON);
 			final int rIndex = r;
-			final String fileName = String.format("QALY_%d.csv", r);
 
-			Callable<float[][]> r_print = new Callable<float[][]>() {
+			Callable<Object[]> r_print = new Callable<Object[]>() {
 
 				@Override
-				public float[][] call() {
+				public Object[] call() {
 
 					float[][] res_qaly = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length];
-					// TODO: Check  Health utilisation interpolation 
+					
 					float[][][] res_heathUtil = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length][RunSimulations.NUM_HEALTHUTIL_RESP];
 					for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
 						// res[t] = (float) Math.max(0,
@@ -289,32 +282,50 @@ public class RunSimulations {
 					// System.out.println(String.format("Simualtion #%d completed.", rIndex));
 
 					if (genIndivCSV) {
-
+						final String fileName = String.format("QALY_%d.csv", rIndex);
 						final File outputFile = new File(outputDir, fileName);
 						try {
 							PrintWriter fWri = new PrintWriter(new FileWriter(outputFile));
 
 							fWri.println("Input");
-							fWri.println("Week,SOC,DOL,D2N");
+							fWri.println("Week,SOC,DOL,D2N,,HealthUtil");
 
 							for (int t = 0; t < WEEKS_DATA.length; t++) {
 								fWri.print(WEEKS_DATA[t]);
-								for (int s = 0; s < cmpPerson.length; s++) {
-									int dayPos = cmpPerson[s].getDayPos(WEEKS_DATA[t] * 7);
-									fWri.print(',');
-									fWri.print(cmpPerson[s].getQALYByPos(WEEKS_DATA[t] * 7, dayPos));
+								int dayVal = WEEKS_DATA[t] * 7;
 
+								for (int s = 0; s < cmpPerson.length; s++) {
+									fWri.print(',');
+									fWri.print(cmpPerson[s].getQALYByPos(dayVal));
+								}
+
+								for (int s = 0; s < cmpPerson.length; s++) {
+									float[] util = cmpPerson[s].getHealthUtil(dayVal);
+									fWri.print(',');
+									for (float u : util) {
+										fWri.print(',');
+										fWri.print(u);
+									}
 								}
 								fWri.println();
 							}
 
 							fWri.println("Simulations");
-							fWri.println("Week,SOC,DOL,D2N");
+							fWri.println("Week,SOC,DOL,D2N,,HealthUtil");
 							for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
 								fWri.print(WEEKS_TO_SAMPLE[t]);
 								for (int s = 0; s < cmpPerson.length; s++) {
 									fWri.print(',');
 									fWri.print(res_qaly[s][t]);
+								}
+								fWri.print(',');
+								for (int s = 0; s < cmpPerson.length; s++) {
+									fWri.print(',');
+									float[] utili = res_heathUtil[s][t];
+									for (int u = 0; u < utili.length; u++) {
+										fWri.print(',');
+										fWri.print(utili[u]);
+									}
 								}
 								fWri.println();
 							}
@@ -324,7 +335,7 @@ public class RunSimulations {
 							e.printStackTrace();
 						}
 					}
-					return res_qaly;
+					return new Object[] { res_qaly, res_heathUtil };
 
 				}
 
@@ -334,7 +345,7 @@ public class RunSimulations {
 				futureRes.add(exec.submit(r_print));
 
 			} else {
-				resultSet[r] = r_print.call();
+				resultSet_All[r] = r_print.call();
 			}
 
 		}
@@ -356,19 +367,27 @@ public class RunSimulations {
 			}
 		}
 
-		for (int r = 0; r < resultSet.length; r++) {
-			if (resultSet[r] == null && futureRes.get(r) != null) {
-				resultSet[r] = futureRes.get(r).get();
+		for (int r = 0; r < resultSet_All.length; r++) {
+			if (resultSet_All[r] == null && futureRes.get(r) != null) {
+				resultSet_All[r] = futureRes.get(r).get();
 			}
 		}
 
 		for (int arm = 0; arm < XLSX_Extract_HEA.STUDY_ARM.length; arm++) {
 
-			float[][] outcomeByArm = new float[resultSet.length][WEEKS_TO_SAMPLE.length];
+			float[][] outcomeByArm = new float[resultSet_All.length][WEEKS_TO_SAMPLE.length
+					+ WEEKS_TO_SAMPLE.length * RunSimulations.NUM_HEALTHUTIL_RESP];
 
-			for (int r = 0; r < resultSet.length; r++) {
+			for (int r = 0; r < resultSet_All.length; r++) {
 				for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
-					outcomeByArm[r][t] = resultSet[r][arm][t];
+					Object[] resSet = resultSet_All[r];
+					float[][] qaly = (float[][]) resSet[0];
+					float[][][] util_res = (float[][][]) resSet[1]; //[sim#][WeekToSampleIndex][respNum]
+					outcomeByArm[r][t] = qaly[arm][t];
+					int util_offset = WEEKS_TO_SAMPLE.length + t * RunSimulations.NUM_HEALTHUTIL_RESP;
+					for (int utilNum = 0; utilNum < util_res[arm][t].length; utilNum++) {
+						outcomeByArm[r][util_offset + utilNum] = util_res[arm][t][utilNum];
+					}
 				}
 
 			}
@@ -394,9 +413,18 @@ public class RunSimulations {
 
 			StringBuffer firstLine = new StringBuffer("Sim");
 
-			for (int i = 0; i < WEEKS_TO_SAMPLE.length; i++) {
+			for (int wk_i = 0; wk_i < WEEKS_TO_SAMPLE.length; wk_i++) {
 				firstLine.append(',');
-				firstLine.append(String.format(" Wk %2d", WEEKS_TO_SAMPLE[i]));
+				firstLine.append(String.format(" Wk %2d", WEEKS_TO_SAMPLE[wk_i]));
+			}
+			
+			for (int wk_i = 0; wk_i < WEEKS_TO_SAMPLE.length; wk_i++) {
+				for (int utilNum = 0; utilNum < RunSimulations.NUM_HEALTHUTIL_RESP; utilNum++) {
+					firstLine.append(',');
+					firstLine.append(String.format(" Wk %2d_Util_%d", 
+							WEEKS_TO_SAMPLE[wk_i], utilNum));
+				}
+				
 			}
 
 			fWriAll.println(firstLine.toString());
