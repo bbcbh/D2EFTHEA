@@ -162,6 +162,27 @@ public class RunSimulations {
 			mapping_study_arm_offset[a] = mapping_study_arm_offset[a - 1] + pt_diff[a - 1];
 		}
 
+		try {
+			PrintWriter pWri = new PrintWriter(
+					new FileWriter(new File(workbookFile.getParentFile(), "Raw_Data_All.csv")));
+
+			pWri.println("Study_Arm,Week_00,Week_48, Week_96");
+			for (float[] q : qaly_mapping) {
+				for (int i = 0; i < q.length; i++) {
+					if (i != 0) {
+						pWri.print(',');
+					}
+					pWri.print(q[i]);
+				}
+				pWri.println();
+			}
+			pWri.close();
+		} catch (IOException e) {
+			e.printStackTrace(System.err);
+		}
+
+		System.out.printf("Workbook at %s loading compeleted.\n", workbookFile.getAbsolutePath());
+
 	}
 
 	public void runSimulations(int numSim, int numThreads, File outputDir) throws Exception {
@@ -266,7 +287,7 @@ public class RunSimulations {
 				public Object[] call() {
 
 					float[][] res_qaly = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length];
-					
+
 					float[][][] res_heathUtil = new float[cmpPerson.length][WEEKS_TO_SAMPLE.length][RunSimulations.NUM_HEALTHUTIL_RESP];
 					for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
 						// res[t] = (float) Math.max(0,
@@ -382,7 +403,7 @@ public class RunSimulations {
 				for (int t = 0; t < WEEKS_TO_SAMPLE.length; t++) {
 					Object[] resSet = resultSet_All[r];
 					float[][] qaly = (float[][]) resSet[0];
-					float[][][] util_res = (float[][][]) resSet[1]; //[sim#][WeekToSampleIndex][respNum]
+					float[][][] util_res = (float[][][]) resSet[1]; // [sim#][WeekToSampleIndex][respNum]
 					outcomeByArm[r][t] = qaly[arm][t];
 					int util_offset = WEEKS_TO_SAMPLE.length + t * RunSimulations.NUM_HEALTHUTIL_RESP;
 					for (int utilNum = 0; utilNum < util_res[arm][t].length; utilNum++) {
@@ -417,14 +438,13 @@ public class RunSimulations {
 				firstLine.append(',');
 				firstLine.append(String.format(" Wk %2d", WEEKS_TO_SAMPLE[wk_i]));
 			}
-			
+
 			for (int wk_i = 0; wk_i < WEEKS_TO_SAMPLE.length; wk_i++) {
 				for (int utilNum = 0; utilNum < RunSimulations.NUM_HEALTHUTIL_RESP; utilNum++) {
 					firstLine.append(',');
-					firstLine.append(String.format(" Wk %2d_Util_%d", 
-							WEEKS_TO_SAMPLE[wk_i], utilNum));
+					firstLine.append(String.format(" Wk %2d_Util_%d", WEEKS_TO_SAMPLE[wk_i], utilNum));
 				}
-				
+
 			}
 
 			fWriAll.println(firstLine.toString());

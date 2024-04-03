@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -39,6 +40,17 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	public static final int SF12_RESP_VISIT = SF12_RESP_ARM + 1;
 	public static final int SF12_RESP_SF12_START = SF12_RESP_VISIT + 1;
 	public static final int SF12_RESP_LENGTH = SF12_RESP_SF12_START + D2EFT_QALY_SF12.SF12_LENGTH;
+	
+	// From 20240305 version
+	public static final int COL_INDEX_SF_12_ID = 0;
+	public static final int COL_INDEX_SF_12_SITE = 4;
+	public static final int COL_INDEX_SF_12_ARM = 1;
+	public static final int COL_INDEX_SF_12_VISIT = 60;
+	public static final int COL_INDEX_SF_12_DATECOMPLETED = 11;
+	public static final int COL_INDEX_SF_12_RESP_START = 14;
+	public static final int COL_SKIP_SF_12_RESP = 3; 
+	
+	public static final HashMap<Integer, Integer> sf12_lookup = new HashMap<>();
 
 	protected int[][] resp_healthUtil;
 	protected Date[] dateCompleted_healthUtil;
@@ -68,6 +80,21 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	
 	public static final int HEALTHUTIL_RESP_LENGTH = HEALTHUTIL_RESP_DAY_MISSED + 1;
 	
+	// From 20240305 version
+	public static final int COL_INDEX_HU_ID = 0;
+	public static final int COL_INDEX_HU_SITE = 4;
+	public static final int COL_INDEX_HU_VISIT = 61;
+	public static final int COL_INDEX_HU_ARM = 1;
+	public static final int COL_INDEX_HU_DATE = 12;
+	public static final int COL_INDEX_HU_RESP_ER_VISIT = 14;
+	public static final int COL_INDEX_HU_RESP_HOSPITAL_ADIM = 18;
+	public static final int COL_INDEX_HU_RESP_NIGHT_IN_HOSPITAL = 19;
+	public static final int COL_INDEX_HU_RESP_NIGHT_IN_NURSING = 27;
+	public static final int COL_INDEX_HU_RESP_OUTPATIENT = 31;
+	public static final int COL_INDEX_HU_RESP_SOCIAL_WORKER = 35;
+	public static final int COL_INDEX_HU_RESP_HOME_CARE_NURSE = 39;
+	public static final int COL_INDEX_HU_RESP_CARE_BY_FAMILY = 43;
+	public static final int COL_INDEX_HU_RESP_DAY_MISSED = 47;
 	
 	public static final int SF_6D_MAP_STUDY_ARM = 0;
 	public static final int SF_6D_MAP_WK_00 = SF_6D_MAP_STUDY_ARM + 1;
@@ -82,6 +109,22 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 
 	//protected transient Collection<int[]>[][] health_util_resp_map = new Collection[STUDY_ARM.length][VISIT_NUM.length];
 	protected transient HashMap<Integer, int[][]> health_util_resp_index_by_pid = new HashMap<>();
+	
+	
+	public XLSX_Extract_HEA() {
+		sf12_lookup.put(COL_INDEX_SF_12_ID, SF12_RESP_ID);
+		sf12_lookup.put(COL_INDEX_SF_12_SITE, SF12_RESP_SITE);
+		sf12_lookup.put(COL_INDEX_SF_12_ARM, SF12_RESP_ARM);
+		sf12_lookup.put(COL_INDEX_SF_12_VISIT,SF12_RESP_VISIT);
+		sf12_lookup.put(COL_INDEX_SF_12_DATECOMPLETED, -1); // Not used
+		
+		for(int sf12_num = 0; sf12_num < D2EFT_QALY_SF12.SF12_LENGTH; sf12_num++) {
+			sf12_lookup.put(COL_INDEX_SF_12_RESP_START + sf12_num * COL_SKIP_SF_12_RESP,
+					SF12_RESP_SF12_START + sf12_num);
+		}
+		
+	}
+	
 
 	public void loadWorkbook(File inpath) {
 		extractWorkbook(inpath);
@@ -127,37 +170,29 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 					for (Cell cell : row) {
 						try {
 							switch (colNum) {
-							case 0: // ID
-							case 1: // SITE
-								resp_sf12[rPt][colNum] = Integer.parseInt(cell.getStringCellValue());
+							case COL_INDEX_SF_12_ID: // ID
+							case COL_INDEX_SF_12_SITE: // SITE
+								resp_sf12[rPt][sf12_lookup.get(colNum)] = Integer.parseInt(cell.getStringCellValue());
 								break;
-							case 2: // ARM
-							case 3: // VISIT
-								toMatch = colNum == SF12_RESP_ARM ? STUDY_ARM : VISIT_NUM;
+							case COL_INDEX_SF_12_ARM: // ARM
+							case COL_INDEX_SF_12_VISIT: // VISIT
+								toMatch = colNum == COL_INDEX_SF_12_ARM ? STUDY_ARM : VISIT_NUM;
 								val = matchString(cell.getStringCellValue(), toMatch);
 								if (val < 0) {
 									throw new IllegalStateException();
 								} else {
-									resp_sf12[rPt][colNum] = val;
+									resp_sf12[rPt][sf12_lookup.get(colNum)] = val;
 								}
 								break;
-							case 4: // Date completed
+							case COL_INDEX_SF_12_DATECOMPLETED: // Date completed
 								dateCompleted_sf12[rPt] = cell.getDateCellValue();
 								break;
-							default:
-								// SF_12
-								int sf_12_Q_num = colNum - 5;
-								if (sf_12_Q_num < D2EFT_QALY_SF12.SF12_LENGTH) {
-									// Offset by date completed
-									toMatch = D2EFT_QALY_SF12.SF12_Options[sf_12_Q_num];
-									val = matchString(cell.getStringCellValue(), toMatch);
-									if (val < 0) {
-										throw new IllegalStateException();
-									} else {
-										resp_sf12[rPt][colNum - 1] = val;
-									}
-
-								}
+							default:																
+								// Check if it is SF_12 response column 
+								if(sf12_lookup.containsKey(colNum)) {									
+									int sf_12_Q_num = sf12_lookup.get(colNum);																										
+									resp_sf12[rPt][sf_12_Q_num] = Integer.parseInt(cell.getStringCellValue());
+								}																							
 							}
 						} catch (IllegalStateException ex) {
 							String output = cell.getCellType() == CellType.NUMERIC
@@ -221,18 +256,17 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 					Loop_ReadingRow:
 					for (Cell cell : row) {
 						try {
-							switch (colNum) {
-							// 0: Subject Initials
+							switch (colNum) {							
 							// 1: Subject Number
-							case 1:
+							case COL_INDEX_HU_ID:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_ID] = convertNumberCell(cell);
 								break;
-							// 2: Site Mnemonic
-							case 2:
+							// 2: Site Id
+							case COL_INDEX_HU_SITE:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_SITE] = convertNumberCell(cell);
 								break;
 							// 3: Visit Mnemonic
-							case 3:
+							case COL_INDEX_HU_VISIT:
 								val = matchString(cell.getStringCellValue(), VISIT_NUM);
 								if (val < 0) {
 									throw new IllegalStateException();
@@ -241,7 +275,7 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 								}
 								break;
 							// 4: RANDARM
-							case 4:
+							case COL_INDEX_HU_ARM:
 								val = matchString(cell.getStringCellValue(), STUDY_ARM);
 								if (val < 0) {
 									throw new IllegalStateException();
@@ -250,56 +284,56 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 								}
 								break;
 							// 5: Date
-							case 5:
+							case COL_INDEX_HU_DATE:
 								// Check date
 								dateCompleted_healthUtil[rPt] = cell.getDateCellValue();
 								break;
 							// 6: 1. How many VISITS did the participant make to an emergency
 							// room/department?
 							// 7: Number of visits
-							case 7:
+							case COL_INDEX_HU_RESP_ER_VISIT:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_ER_VISIT] = convertNumberCell(cell);
 								break;
 							// 8: 2a. Has the participant been admitted to hospital OVERNIGHT? If Yes,
 							// please complete 2b and 2c
 							// 9: Yes ~ HLTHNight2a
 							// 10: 2b How many ADMISSIONS did the participant have?
-							case 10:
+							case COL_INDEX_HU_RESP_HOSPITAL_ADIM:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_HOSPITAL_ADIM] = convertNumberCell(cell);
 								break;
 							// 11: itmNights2cNONE ~ HLTHNight2a
 							// 12: 2c How many NIGHTS in total did the participant spend in hospital?
-							case 12:
+							case COL_INDEX_HU_RESP_NIGHT_IN_HOSPITAL:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_NIGHTS_IN_HOSPITAL] = convertNumberCell(cell);
 								break;
 							// 13: 3. How many NIGHTS did the participant stay at a nursing home?
 							// 14: Number of nights ~ HEALTHNIGHTS
-							case 14:
+							case COL_INDEX_HU_RESP_NIGHT_IN_NURSING:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_NIGHTS_IN_NURSING] = convertNumberCell(cell);
 								break;
 							// 15: itmHLTHOutpatient0 ~ HLTHOUTPATIENT
 							// 16: Number of visits ~ HLTHOUTPATIENT
-							case 16:
+							case COL_INDEX_HU_RESP_OUTPATIENT:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_OUTPATIENT] = convertNumberCell(cell);
 								break;
 							// 17: itmHLTHSW0 ~ HLTHSW0
 							// 18: Number of times ~ HLTHSW0
-							case 18:
+							case COL_INDEX_HU_RESP_SOCIAL_WORKER:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_VISIT_SOCIAL_WORKER] = convertNumberCell(cell);
 								break;
 							// 19: itmHLTHNurse0 ~ HEALTHNURSE
 							// 20: Number of times ~ HEALTHNURSE
-							case 20:
+							case COL_INDEX_HU_RESP_HOME_CARE_NURSE:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_VISIT_HOME_CARE_NURSE] = convertNumberCell(cell);
 								break;
 							// 21: itmHLTHFam0 ~ HEALTHFAMFRI
 							// 22: Number of days ~ HEALTHFAMFRI
-							case 22:
+							case COL_INDEX_HU_RESP_CARE_BY_FAMILY:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_CARE_BY_FAMILY] = convertNumberCell(cell);
 								break;
 							// 23: itmHLTHActiv0 ~ HEALTHMISSAC
 							// 24: Number of days ~ HEALTHMISSAC
-							case 24:
+							case COL_INDEX_HU_RESP_DAY_MISSED:
 								resp_healthUtil[rPt][HEALTHUTIL_RESP_DAY_MISSED] = convertNumberCell(cell);
 								break;
 							default:
