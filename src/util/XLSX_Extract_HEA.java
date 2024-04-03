@@ -27,8 +27,8 @@ public class XLSX_Extract_HEA extends XLSX_Extract {
 	public static final String[] STUDY_ARM = new String[] { "SOC", "DOL", "D2N" };
 	public static final String[] VISIT_NUM = new String[] { "Day 0", "Wk48", "Wk96" };
 
-	public static final String WORKSHEET_NAME_SF_12 = "SF_12";
-	public static final String WORKSHEET_NAME_HEALTH_UTIL = "Health_Util";
+	public static final String WORKSHEET_NAME_SF_12 = "SF12";
+	public static final String WORKSHEET_NAME_HEALTH_UTIL = "Health Utility";
 
 	protected int[][] resp_sf12;
 	protected Date[] dateCompleted_sf12;
